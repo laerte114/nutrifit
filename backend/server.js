@@ -141,5 +141,8 @@ app.post('/meus-alimentos', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 
-const PORT = 3001;
-app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server rodando na porta ${PORT}`);
+});

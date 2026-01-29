@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node backend/server.js"
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "dependencies": {
