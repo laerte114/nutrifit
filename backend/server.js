@@ -4,24 +4,25 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
-
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// --- CONFIGURAÇÃO DE SEGURANÇA (IMPORTANTE PARA VENDA) ---
-const SECRET_KEY = "sua_chave_secreta_aqui";
+// --- CONFIGURAÇÃO DE SEGURANÇA ---
+const SECRET_KEY = process.env.SECRET_KEY || "sua_chave_secreta_aqui";
 
-// --- CONFIGURAÇÃO DO BANCO DE DADOS (ATUALIZADO) ---
-// Este link ignora o erro 'querySrv' por não usar o prefixo +srv
-const mongoURI = "mongodb://rodrigueslaerte736_db_user:EUanYjKN2Q9HPdYu@cluster0-shard-00-00.zr8vca5.mongodb.net:27017,cluster0-shard-00-01.zr8vca5.mongodb.net:27017,cluster0-shard-00-02.zr8vca5.mongodb.net:27017/nutrifit?ssl=true&replicaSet=atlas-zr8vca5-shard-0&authSource=admin&retryWrites=true&w=majority";
+// --- CONFIGURAÇÃO DO BANCO DE DADOS ---
+// Prioriza a variável do Render, se não houver, usa o seu link reserva
+const mongoURI = process.env.MONGO_URI || "mongodb+srv://rodrigueslaerte736_db_user:27832783@cluster0.zr8vca5.mongodb.net/nutrifit?retryWrites=true&w=majority";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("✅ CONECTADO AO MONGODB ATLAS (NUVEM)"))
-  .catch(err => console.error("❌ Erro MongoDB Cloud:", err.message));
+  .catch(err => {
+    console.error("❌ Erro MongoDB Cloud:", err.message);
+    console.log("⚠️ O servidor continuará rodando sem banco de dados.");
+  });
 
 // --- SCHEMAS ---
-
 const UserSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -42,7 +43,7 @@ const MealSchema = new mongoose.Schema({
 const Meal = mongoose.model('Meal', MealSchema);
 
 const foodSchema = new mongoose.Schema({
-  userEmail: { type: String }, // Adicionado para filtrar alimentos por usuário
+  userEmail: { type: String },
   nome: String,
   c: Number,
   p: Number,
@@ -51,8 +52,11 @@ const foodSchema = new mongoose.Schema({
 }, { collection: 'foodbases' }); 
 const FoodBase = mongoose.model('FoodBase', foodSchema);
 
-// --- ROTAS (AUTENTICAÇÃO, REFEIÇÕES E ALIMENTOS) ---
-// Suas rotas continuam exatamente iguais...
+// --- ROTAS ---
+
+app.get('/', (req, res) => {
+  res.send('🚀 Backend NutriFit Online e pronto para usuários Premium!');
+});
 
 app.post('/register', async (req, res) => {
   try {
@@ -141,8 +145,8 @@ app.post('/meus-alimentos', async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 
-const PORT = process.env.PORT || 10000;
-
+// Porta dinâmica para o Render
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server rodando na porta ${PORT}`);
 });

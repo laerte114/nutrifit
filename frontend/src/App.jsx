@@ -246,7 +246,7 @@ const App = () => {
       <div className={`min-h-screen flex flex-col items-center justify-center p-8 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
         <Crown size={80} className="text-indigo-600 mb-6" />
         <h1 className="text-5xl font-black italic mb-12">NUTRIFIT CLOUD</h1>
-        <button onClick={() => { localStorage.setItem('nf:session', JSON.stringify({nome: 'RODRIGO', email: 'rod@nutrifit.com'})); window.location.reload(); }} className={btnPrimary}>LOGIN PREMIUM</button>
+        <button onClick={() => { localStorage.setItem('nf:session', JSON.stringify({nome: 'RODRIGO', email: 'rod@nutrifit.com'})); window.location.reload(); }} className={btnPrimary}>ENTRAR</button>
       </div>
     );
   }
