@@ -13,7 +13,8 @@ const SECRET_KEY = process.env.SECRET_KEY || "sua_chave_secreta_aqui";
 
 // --- CONFIGURAÇÃO DO BANCO DE DADOS ---
 // Prioriza a variável do Render, se não houver, usa o seu link reserva
-const mongoURI = process.env.MONGO_URI || "mongodb+srv://rodrigueslaerte736_db_user:27832783@cluster0.zr8vca5.mongodb.net/nutrifit?retryWrites=true&w=majority";
+
+const mongoURI = process.env.MONGO_URI || "mongodb+srv://rodrigueslaerte736_db_user:nutrifit2026@cluster0.zr8vca5.mongodb.net/nutrifit?retryWrites=true&w=majority";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("✅ CONECTADO AO MONGODB ATLAS (NUVEM)"))
