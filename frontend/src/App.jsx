@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO GLOBAL ---
-const API_URL = "http://localhost:3001"; 
+const API_URL = "https://nutrifit-1jhv.onrender.com"; 
 
 // --- UTILS ---
 const formatarDataParaBR = (dataStr) => {
@@ -84,44 +84,53 @@ const App = () => {
 
   // --- ACTIONS ---
   const handleAddAlimento = async () => {
-    const nomeBusca = alInput.nome.toLowerCase().trim();
-    const alimentoInfo = dbTotal[nomeBusca];
-    const gramas = parseFloat(alInput.gramas);
+  const nomeBusca = alInput.nome.toLowerCase().trim();
+  const alimentoInfo = dbTotal[nomeBusca];
+  const gramas = parseFloat(alInput.gramas);
 
-    if (alimentoInfo && gramas > 0) {
-      const novaRef = {
-        email: currentUser.email,
-        data: formatarDataParaBR(dataSelecionada),
-        alimento: {
-          nome: alInput.nome.toUpperCase(),
-          gramas: gramas,
-          cal: (alimentoInfo.c * gramas) / 100,
-          p: (alimentoInfo.p * gramas) / 100,
-          cho: (alimentoInfo.cho * gramas) / 100,
-          g: (alimentoInfo.g * gramas) / 100
-        }
-      };
+  if (alimentoInfo && gramas > 0) {
+    const novaRef = {
+      email: currentUser?.email || "usuario@teste.com",
+      data: formatarDataParaBR(dataSelecionada),
+      alimento: {
+        nome: alInput.nome.toUpperCase(),
+        gramas: gramas,
+        cal: (alimentoInfo.c * gramas) / 100,
+        p: (alimentoInfo.p * gramas) / 100 || 0,
+        cho: (alimentoInfo.cho * gramas) / 100 || 0,
+        g: (alimentoInfo.g * gramas) / 100 || 0
+      }
+    };
 
-      try {
-        const res = await fetch(`${API_URL}/refeicoes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(novaRef)
-        });
+    try {
+      const res = await fetch(`${API_URL}/refeicoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novaRef)
+      });
 
-        if (res.ok) {
-          const salvo = await res.json();
-          setHistorico(prev => ({
-            ...prev,
-            [dataSelecionada]: [salvo, ...(prev[dataSelecionada] || [])]
-          }));
-          setAlInput({ nome: '', gramas: '' });
-        }
-      } catch (err) { console.error("Erro ao salvar alimento"); }
-    } else {
-        alert("Alimento não encontrado ou gramas inválidas!");
+      if (res.ok) {
+        const salvo = await res.json();
+        
+        // Atualiza a tela localmente
+        setHistorico(prev => ({
+          ...prev,
+          [dataSelecionada]: [salvo, ...(prev[dataSelecionada] || [])]
+        }));
+
+        setAlInput({ nome: '', gramas: '' });
+        console.log("✅ Adicionado com sucesso!");
+      } else {
+        const erroMsg = await res.text();
+        console.error("❌ Erro no servidor:", erroMsg);
+      }
+    } catch (err) {
+      console.error("❌ Erro de conexão:", err);
     }
-  };
+  } else {
+    alert("Selecione um alimento válido.");
+  }
+};
 
   const handleDelete = async (id, dataRef) => {
     if (!id) return;
