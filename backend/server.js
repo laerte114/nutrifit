@@ -49,7 +49,7 @@ const FoodBase = mongoose.model('FoodBase', new mongoose.Schema({
 // --- ROTAS ---
 
 app.get('/', (req, res) => {
-  res.send('🚀 Backend NutriFit Online - Versão Gratuita');
+  res.send('🚀 Backend NutriFit - TESTE DE CONEXÃO 2.0');
 });
 
 // LOGIN E REGISTRO (Mantidos como estavam)
