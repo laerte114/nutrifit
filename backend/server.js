@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(cors());
 
 const SECRET_KEY = process.env.SECRET_KEY || "sua_chave_secreta_aqui";
-const mongoURI = process.env.MONGO_URI || "mongodb+srv://rodrigueslaerte736_db_user:nutrifit2026@cluster0.zr8vca5.mongodb.net/nutrifit?retryWrites=true&w=majority";
+const mongoURI = process.env.MONGO_URI || "mongodb+srv://rodrigueslaerte736_db_user:nutrifit2026@cluster0.zr8vca5.mongodb.net/Nutrifit?retryWrites=true&w=majority";
 
 // --- SCHEMAS ---
 const User = mongoose.model('User', new mongoose.Schema({
