@@ -39,6 +39,42 @@ const FoodBase = mongoose.model('FoodBase', new mongoose.Schema({
   g: Number
 }));
 
+// 1. O "Desenho" dos dados no banco
+const UserStats = mongoose.model('UserStats', new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  peso: String,
+  altura: String,
+  idade: String,
+  genero: String,
+  intensidade: String,
+  objetivo: String
+}));
+
+// 2. A rota para salvar (POST)
+app.post('/stats', async (req, res) => {
+  try {
+    const { email, ...dados } = req.body;
+    // O findOneAndUpdate com upsert:true cria se não existir ou atualiza se já existir
+    const stats = await UserStats.findOneAndUpdate(
+      { email }, 
+      { email, ...dados }, 
+      { upsert: true, new: true }
+    );
+    res.json(stats);
+  } catch (err) { 
+    console.error("Erro no servidor:", err);
+    res.status(500).json({ error: err.message }); 
+  }
+});
+
+// 3. A rota para buscar (GET) - adicione também para o app carregar ao abrir
+app.get('/stats/:email', async (req, res) => {
+  try {
+    const stats = await UserStats.findOne({ email: req.params.email });
+    res.json(stats || {});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // --- LISTA DOS 56 ALIMENTOS (Base Inicial) ---
 const baseFixa = [
   { nome: "arroz branco", c: 130, p: 2.6, cho: 28.2, g: 0.2, userEmail: "sistema@nutrifit.com" },
@@ -223,6 +259,44 @@ app.delete('/refeicoes/:id', async (req, res) => {
     if (!resultado) return res.status(404).json({ error: "Não encontrado" });
     res.status(200).json({ message: "Deletado" });
   } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// ROTA PARA BUSCAR MEDIDAS E STREAK
+app.get('/stats/:email', async (req, res) => {
+  try {
+    const stats = await UserStats.findOne({ email: req.params.email });
+    res.json(stats || {});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ROTA PARA SALVAR MEDIDAS
+app.post('/stats', async (req, res) => {
+  try {
+    const { email, ...dados } = req.body;
+    // O upsert: true faz com que: se não existir, cria; se existir, atualiza.
+    const stats = await UserStats.findOneAndUpdate(
+      { email }, 
+      { email, ...dados }, 
+      { upsert: true, new: true }
+    );
+    res.json(stats);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ROTA DA OFENSIVA (STREAK)
+app.get('/streak/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    const hoje = new Date().toISOString().split('T')[0];
+    const stats = await UserStats.findOne({ email });
+
+    if (!stats) return res.json({ streak: 0 });
+
+    // Lógica simples de streak: se a última atividade foi ontem, mantém/soma. 
+    // Se foi antes de ontem, reseta.
+    // (Pode ser expandida depois, mas para o MVP isso já brilha)
+    res.json({ streak: stats.streak || 0 });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 const PORT = process.env.PORT || 3001;
