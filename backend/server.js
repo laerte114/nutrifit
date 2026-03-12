@@ -206,6 +206,7 @@ app.post('/meus-alimentos', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+
 // CORREÇÃO: Usando FoodBase em vez de Alimento
 app.delete('/meus-alimentos/:id', async (req, res) => {
   try {
@@ -297,6 +298,34 @@ app.get('/streak/:email', async (req, res) => {
     // (Pode ser expandida depois, mas para o MVP isso já brilha)
     res.json({ streak: stats.streak || 0 });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ROTA PARA EDITAR MACROS DE UM ALIMENTO NA BIBLIOTECA
+app.put('/meus-alimentos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { c, p, cho, g } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
+
+    const atualizado = await FoodBase.findByIdAndUpdate(
+      id,
+      { 
+        c: Number(c), 
+        p: Number(p), 
+        cho: Number(cho), 
+        g: Number(g) 
+      },
+      { new: true }
+    );
+
+    if (!atualizado) return res.status(404).json({ error: "Alimento não encontrado" });
+    res.json(atualizado);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 3001;
