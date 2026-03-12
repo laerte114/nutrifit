@@ -1,3 +1,4 @@
+require('dotenv').config(); // <-- Movido para a primeira linha!
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -10,7 +11,7 @@ app.use(express.json());
 app.use(cors());
 
 const SECRET_KEY = process.env.SECRET_KEY || "sua_chave_secreta_aqui";
-const mongoURI = process.env.MONGO_URI;
+const mongoURI = process.env.MONGO_URI; // <-- Declarado apenas UMA vez aqui!
 
 // --- SCHEMAS ---
 const User = mongoose.model('User', new mongoose.Schema({
@@ -39,7 +40,6 @@ const FoodBase = mongoose.model('FoodBase', new mongoose.Schema({
   g: Number
 }));
 
-// 1. O "Desenho" dos dados no banco
 const UserStats = mongoose.model('UserStats', new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   peso: String,
@@ -49,31 +49,6 @@ const UserStats = mongoose.model('UserStats', new mongoose.Schema({
   intensidade: String,
   objetivo: String
 }));
-
-// 2. A rota para salvar (POST)
-app.post('/stats', async (req, res) => {
-  try {
-    const { email, ...dados } = req.body;
-    // O findOneAndUpdate com upsert:true cria se não existir ou atualiza se já existir
-    const stats = await UserStats.findOneAndUpdate(
-      { email }, 
-      { email, ...dados }, 
-      { upsert: true, new: true }
-    );
-    res.json(stats);
-  } catch (err) { 
-    console.error("Erro no servidor:", err);
-    res.status(500).json({ error: err.message }); 
-  }
-});
-
-// 3. A rota para buscar (GET) - adicione também para o app carregar ao abrir
-app.get('/stats/:email', async (req, res) => {
-  try {
-    const stats = await UserStats.findOne({ email: req.params.email });
-    res.json(stats || {});
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
 
 // --- LISTA DOS 56 ALIMENTOS (Base Inicial) ---
 const baseFixa = [
@@ -125,7 +100,6 @@ const baseFixa = [
   { nome: "castanha", c: 656, p: 14, cho: 12, g: 66, userEmail: "sistema@nutrifit.com" },
 ];
 
-// FUNÇÃO DE INJEÇÃO AUTOMÁTICA
 const seedDatabase = async () => {
   try {
     const count = await FoodBase.countDocuments({ userEmail: "sistema@nutrifit.com" });
@@ -136,12 +110,7 @@ const seedDatabase = async () => {
   } catch (err) { console.error("❌ ERRO NA INJEÇÃO:", err); }
 };
 
-// --- CONEXÃO ---
-require('dotenv').config(); 
-
-const mongoURI = process.env.MONGO_URI;
-
-// Esse log vai aparecer no painel do Render e nos dizer a verdade:
+// --- CONEXÃO COM MONGODB ---
 console.log("Tentando conectar com a URI:", mongoURI ? "Configurada ✅" : "INEXISTENTE (undefined) ❌");
 
 if (!mongoURI) {
@@ -153,7 +122,6 @@ if (!mongoURI) {
 }
 
 // --- ROTAS ---
-
 app.get('/', (req, res) => res.send('🚀 Backend NutriFit - Online'));
 
 app.post('/register', async (req, res) => {
@@ -180,18 +148,14 @@ app.post('/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// NOVA ROTA PARA O FRONT-END BAIXAR A BASE INICIAL E OS DO USUÁRIO
 app.get('/alimentos-base/:email', async (req, res) => {
   try {
     const { email } = req.params;
-    // Busca alimentos do sistema OU do usuário logado
     const alimentos = await FoodBase.find({ 
       userEmail: { $in: ["sistema@nutrifit.com", email] } 
     });
     res.json(alimentos);
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/meus-alimentos/:email', async (req, res) => {
@@ -214,30 +178,20 @@ app.post('/meus-alimentos', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-
-// CORREÇÃO: Usando FoodBase em vez de Alimento
 app.delete('/meus-alimentos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Validação extra: verifica se o ID enviado tem o formato correto do MongoDB
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID em formato inválido" });
     }
-
     const resultado = await FoodBase.findByIdAndDelete(id);
-
     if (resultado) {
       console.log(`✅ Alimento ${id} excluído com sucesso.`);
       res.status(200).json({ message: "Removido!" });
     } else {
-      console.log(`❓ Alimento ${id} não encontrado no banco.`);
       res.status(404).json({ message: "Não encontrado!" });
     }
-  } catch (error) {
-    console.error("❌ Erro no Delete:", error);
-    res.status(500).json({ error: error.message });
-  }
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/refeicoes/:email/:data', async (req, res) => {
@@ -261,7 +215,6 @@ app.post('/refeicoes', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// CORREÇÃO: Usando Meal em vez de Refeicao
 app.delete('/refeicoes/:id', async (req, res) => {
   try {
     const resultado = await Meal.findByIdAndDelete(req.params.id);
@@ -270,7 +223,6 @@ app.delete('/refeicoes/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ROTA PARA BUSCAR MEDIDAS E STREAK
 app.get('/stats/:email', async (req, res) => {
   try {
     const stats = await UserStats.findOne({ email: req.params.email });
@@ -278,11 +230,9 @@ app.get('/stats/:email', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ROTA PARA SALVAR MEDIDAS
 app.post('/stats', async (req, res) => {
   try {
     const { email, ...dados } = req.body;
-    // O upsert: true faz com que: se não existir, cria; se existir, atualiza.
     const stats = await UserStats.findOneAndUpdate(
       { email }, 
       { email, ...dados }, 
@@ -292,48 +242,30 @@ app.post('/stats', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ROTA DA OFENSIVA (STREAK)
 app.get('/streak/:email', async (req, res) => {
   try {
     const email = req.params.email;
-    const hoje = new Date().toISOString().split('T')[0];
     const stats = await UserStats.findOne({ email });
-
     if (!stats) return res.json({ streak: 0 });
-
-    // Lógica simples de streak: se a última atividade foi ontem, mantém/soma. 
-    // Se foi antes de ontem, reseta.
-    // (Pode ser expandida depois, mas para o MVP isso já brilha)
     res.json({ streak: stats.streak || 0 });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ROTA PARA EDITAR MACROS DE UM ALIMENTO NA BIBLIOTECA
 app.put('/meus-alimentos/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { c, p, cho, g } = req.body;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID inválido" });
     }
-
     const atualizado = await FoodBase.findByIdAndUpdate(
       id,
-      { 
-        c: Number(c), 
-        p: Number(p), 
-        cho: Number(cho), 
-        g: Number(g) 
-      },
+      { c: Number(c), p: Number(p), cho: Number(cho), g: Number(g) },
       { new: true }
     );
-
     if (!atualizado) return res.status(404).json({ error: "Alimento não encontrado" });
     res.json(atualizado);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 const PORT = process.env.PORT || 3001;
