@@ -137,12 +137,20 @@ const seedDatabase = async () => {
 };
 
 // --- CONEXÃO ---
-mongoose.connect(mongoURI)
-  .then(() => {
-    console.log("✅ CONECTADO AO MONGODB");
-    seedDatabase();
-  })
-  .catch(err => console.error("❌ Erro MongoDB:", err.message));
+require('dotenv').config(); 
+
+const mongoURI = process.env.MONGO_URI;
+
+// Esse log vai aparecer no painel do Render e nos dizer a verdade:
+console.log("Tentando conectar com a URI:", mongoURI ? "Configurada ✅" : "INEXISTENTE (undefined) ❌");
+
+if (!mongoURI) {
+  console.error("❌ O Render não está enviando a variável MONGO_URI para o código.");
+} else {
+  mongoose.connect(mongoURI)
+    .then(() => console.log("✅ CONECTADO AO MONGODB"))
+    .catch(err => console.error("❌ Erro MongoDB:", err.message));
+}
 
 // --- ROTAS ---
 
