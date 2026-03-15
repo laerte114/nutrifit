@@ -1,19 +1,36 @@
-require('dotenv').config(); // <-- Movido para a primeira linha!
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const { ObjectId } = require('mongoose').Types;
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 const SECRET_KEY = process.env.SECRET_KEY || "sua_chave_secreta_aqui";
-const mongoURI = process.env.MONGO_URI; // <-- Declarado apenas UMA vez aqui!
+const mongoURI = process.env.MONGO_URI;
 
-// --- SCHEMAS ---
+const fetchMeals = async () => {
+  // Só tenta buscar se o usuário estiver logado e tivermos o e-mail dele
+  if (!user || !user.email) return;
+
+  try {
+    const res = await fetch(`${API_URL}/refeicoes/${user.email}/${date}`);
+    const data = await res.json();
+    
+    // Atualiza o estado da lista de refeições que aparece na tela
+    setMeals(data); 
+  } catch (err) {
+    console.error("Erro ao buscar refeições:", err);
+  }
+};
+
+// ==========================================
+// 1. SCHEMAS (Modelos de Dados)
+// ==========================================
+
 const User = mongoose.model('User', new mongoose.Schema({
   nome: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -24,7 +41,7 @@ const Meal = mongoose.model('Meal', new mongoose.Schema({
   email: String, 
   nome: String,
   gramas: Number,
-  c: Number,
+  c: Number, // Calorias no banco
   p: Number,
   cho: Number,
   g: Number,
@@ -47,10 +64,14 @@ const UserStats = mongoose.model('UserStats', new mongoose.Schema({
   idade: String,
   genero: String,
   intensidade: String,
-  objetivo: String
+  objetivo: String,
+  streak: { type: Number, default: 0 }
 }));
 
-// --- LISTA DOS 56 ALIMENTOS (Base Inicial) ---
+// ==========================================
+// 2. BASE DE DADOS INICIAL (Seed)
+// ==========================================
+
 const baseFixa = [
   { nome: "arroz branco", c: 130, p: 2.6, cho: 28.2, g: 0.2, userEmail: "sistema@nutrifit.com" },
   { nome: "arroz integral", c: 124, p: 2.6, cho: 25.8, g: 1, userEmail: "sistema@nutrifit.com" },
@@ -105,23 +126,30 @@ const seedDatabase = async () => {
     const count = await FoodBase.countDocuments({ userEmail: "sistema@nutrifit.com" });
     if (count === 0) {
       await FoodBase.insertMany(baseFixa);
-      console.log("✅ Alimentos injetados!");
+      console.log("✅ Alimentos injetados na base!");
     }
   } catch (err) { console.error("❌ ERRO NA INJEÇÃO:", err); }
 };
 
-// --- CONEXÃO COM MONGODB ---
-console.log("Tentando conectar com a URI:", mongoURI ? "Configurada ✅" : "INEXISTENTE (undefined) ❌");
+// ==========================================
+// 3. CONEXÃO MONGODB
+// ==========================================
 
 if (!mongoURI) {
-  console.error("❌ O Render não está enviando a variável MONGO_URI para o código.");
+  console.error("❌ Erro: Variável MONGO_URI não definida.");
 } else {
   mongoose.connect(mongoURI)
-    .then(() => console.log("✅ CONECTADO AO MONGODB"))
+    .then(() => {
+      console.log("✅ CONECTADO AO MONGODB");
+      seedDatabase(); // Chama a injeção de alimentos após conectar
+    })
     .catch(err => console.error("❌ Erro MongoDB:", err.message));
 }
 
-// --- ROTAS ---
+// ==========================================
+// 4. ROTAS DE AUTENTICAÇÃO
+// ==========================================
+
 app.get('/', (req, res) => res.send('🚀 Backend NutriFit - Online'));
 
 app.post('/register', async (req, res) => {
@@ -129,10 +157,14 @@ app.post('/register', async (req, res) => {
     const { nome, email, password } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "E-mail já cadastrado." });
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ nome, email, password: hashedPassword });
     await newUser.save();
-    res.status(201).json({ message: "Sucesso" });
+    
+    // Login automático após registro
+    const token = jwt.sign({ email: newUser.email }, SECRET_KEY, { expiresIn: '7d' });
+    res.status(201).json({ token, nome: newUser.nome, email: newUser.email });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -141,12 +173,16 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Incorreto" });
+      return res.status(401).json({ message: "E-mail ou senha incorretos" });
     }
-    const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: '1d' });
+    const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: '7d' });
     res.json({ token, nome: user.nome, email: user.email });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ==========================================
+// 5. ROTAS DE ALIMENTOS E REFEIÇÕES
+// ==========================================
 
 app.get('/alimentos-base/:email', async (req, res) => {
   try {
@@ -154,13 +190,6 @@ app.get('/alimentos-base/:email', async (req, res) => {
     const alimentos = await FoodBase.find({ 
       userEmail: { $in: ["sistema@nutrifit.com", email] } 
     });
-    res.json(alimentos);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/meus-alimentos/:email', async (req, res) => {
-  try {
-    const alimentos = await FoodBase.find({ userEmail: req.params.email });
     res.json(alimentos);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -178,27 +207,22 @@ app.post('/meus-alimentos', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/meus-alimentos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "ID em formato inválido" });
-    }
-    const resultado = await FoodBase.findByIdAndDelete(id);
-    if (resultado) {
-      console.log(`✅ Alimento ${id} excluído com sucesso.`);
-      res.status(200).json({ message: "Removido!" });
-    } else {
-      res.status(404).json({ message: "Não encontrado!" });
-    }
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
 app.get('/refeicoes/:email/:data', async (req, res) => {
   try {
     const { email, data } = req.params;
     const meals = await Meal.find({ email, data }).sort({ _id: -1 });
-    res.json(meals);
+    
+    // Converte 'c' do banco para 'cal' para o frontend
+    const formatado = meals.map(m => ({
+      _id: m._id,
+      nome: m.nome,
+      gramas: m.gramas,
+      cal: m.c, 
+      p: m.p,
+      cho: m.cho,
+      g: m.g
+    }));
+    res.json(formatado);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -206,8 +230,13 @@ app.post('/refeicoes', async (req, res) => {
   try {
     const { email, alimento, data } = req.body;
     const newMeal = new Meal({ 
-      email, nome: alimento.nome, gramas: alimento.gramas,
-      c: alimento.cal || alimento.c, p: alimento.p || 0, cho: alimento.cho || 0, g: alimento.g || 0,
+      email, 
+      nome: alimento.nome, 
+      gramas: alimento.gramas,
+      c: alimento.cal || alimento.c, 
+      p: alimento.p || 0, 
+      cho: alimento.cho || 0, 
+      g: alimento.g || 0,
       data
     });
     await newMeal.save();
@@ -217,11 +246,14 @@ app.post('/refeicoes', async (req, res) => {
 
 app.delete('/refeicoes/:id', async (req, res) => {
   try {
-    const resultado = await Meal.findByIdAndDelete(req.params.id);
-    if (!resultado) return res.status(404).json({ error: "Não encontrado" });
+    await Meal.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "Deletado" });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
+
+// ==========================================
+// 6. ROTAS DE ESTATÍSTICAS
+// ==========================================
 
 app.get('/stats/:email', async (req, res) => {
   try {
@@ -242,31 +274,16 @@ app.post('/stats', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/streak/:email', async (req, res) => {
-  try {
-    const email = req.params.email;
-    const stats = await UserStats.findOne({ email });
-    if (!stats) return res.json({ streak: 0 });
-    res.json({ streak: stats.streak || 0 });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
+// ==========================================
+// 7. INICIALIZAÇÃO
+// ==========================================
 
-app.put('/meus-alimentos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { c, p, cho, g } = req.body;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: "ID inválido" });
-    }
-    const atualizado = await FoodBase.findByIdAndUpdate(
-      id,
-      { c: Number(c), p: Number(p), cho: Number(cho), g: Number(g) },
-      { new: true }
-    );
-    if (!atualizado) return res.status(404).json({ error: "Alimento não encontrado" });
-    res.json(atualizado);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  app.post('/refeicoes', async (req, res) => {
+  const novaRefeicao = new Meal(req.body); 
+  
+  await novaRefeicao.save(); 
+  res.json(novaRefeicao);
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Porta ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Servidor NutriFit rodando na porta ${PORT}`));

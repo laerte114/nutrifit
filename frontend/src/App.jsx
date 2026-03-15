@@ -15,6 +15,13 @@ const formatarDataParaBR = (dataStr) => {
 };
 
 const App = () => {
+
+  const [user, setUser] = useState(null);
+  const [authMode, setAuthMode] = useState('login'); 
+  const [isRegister, setIsRegister] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [loginData, setLoginData] = useState({ nome: '', email: '', password: '' });
+
   const session = localStorage.getItem('nf:session');
   const userObj = session ? JSON.parse(session) : null;
   const [currentUser, setCurrentUser] = useState(userObj);
@@ -44,6 +51,83 @@ const App = () => {
 
   const isDiaAnterior = dataSelecionada !== hojeStr;
   const [dbFixa, setDbFixa] = useState({});
+
+  useEffect(() => {
+  const savedSession = localStorage.getItem('nf:session');
+  if (savedSession) {
+    const data = JSON.parse(savedSession);
+    setUser(data);
+    setAuthMode('app');
+  }
+}, []);
+
+  useEffect(() => {
+  if (authMode === 'app') {
+    fetchMeals();
+  }
+}, [date, user, authMode]);
+
+  const addMeal = async (alimento) => {
+  // 1. Organiza os dados
+  const dadosParaEnviar = {
+    email: user.email,
+    alimento: alimento,
+    data: date 
+  };
+
+  // 2. Faz a entrega para o backend (o fetch)
+  const response = await fetch(`${API_URL}/refeicoes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dadosParaEnviar)
+  });
+  
+  // 3. Se deu certo, atualiza a lista na tela
+  if (response.ok) fetchMeals(); 
+};
+
+const handleAuth = async () => {
+  if (!loginData.email || !loginData.password || (isRegister && !loginData.nome)) {
+    alert("Preencha todos os campos!");
+    return;
+  }
+
+  setAuthLoading(true);
+  const endpoint = isRegister ? "/register" : "/login";
+  
+  try {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginData)
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // Salva no navegador para persistência
+      localStorage.setItem('nf:session', JSON.stringify({
+        nome: data.nome,
+        email: data.email,
+        token: data.token
+      }));
+      
+      setUser(data);
+      setAuthMode('app');
+    } else {
+      alert(data.message || "E-mail ou senha incorretos.");
+    }
+  } catch (err) {
+    alert("Não foi possível conectar ao servidor. Tente novamente.");
+  } finally {
+    setAuthLoading(false);
+  }
+};
+
+const handleLogout = () => {
+  localStorage.removeItem('nf:session');
+  window.location.reload();
+};
 
   // 1. BUSCA DA BASE DE ALIMENTOS
   useEffect(() => {
@@ -231,20 +315,57 @@ const handleAddAlimento = async () => {
   const btnPrimary = `w-full p-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase italic shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
 
   if (authMode !== 'app') {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <button 
-          onClick={() => { 
-            localStorage.setItem('nf:session', JSON.stringify({nome: 'USUÁRIO PREMIUM', email: 'user@nutrifit.com'})); 
-            window.location.reload(); 
-          }} 
-          className={btnPrimary}
-        >
-          Acessar NutriFit Premium
-        </button>
+  return (
+    <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+      <div className="w-full max-w-sm space-y-8">
+        <div className="text-center">
+          <Crown className="text-indigo-500 mx-auto mb-4" size={48} />
+          <h1 className="text-4xl font-black italic uppercase tracking-tighter">NutriFit</h1>
+          <p className="text-xs font-bold opacity-40 uppercase">
+            {isRegister ? 'Crie sua conta premium' : 'Acesse seu painel'}
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {isRegister && (
+            <input 
+              placeholder="NOME COMPLETO" 
+              className={inputClass} 
+              onChange={e => setLoginData({...loginData, nome: e.target.value.toUpperCase()})}
+            />
+          )}
+          <input 
+            type="email"
+            placeholder="E-MAIL" 
+            className={inputClass} 
+            onChange={e => setLoginData({...loginData, email: e.target.value.toLowerCase()})}
+          />
+          <input 
+            type="password" 
+            placeholder="SENHA" 
+            className={inputClass} 
+            onChange={e => setLoginData({...loginData, password: e.target.value})}
+          />
+          
+          <button 
+            onClick={handleAuth} 
+            disabled={authLoading}
+            className={`${btnPrimary} mt-4`}
+          >
+            {authLoading ? 'CARREGANDO...' : (isRegister ? 'CADASTRAR AGORA' : 'ENTRAR NO APP')}
+          </button>
+
+          <button 
+            onClick={() => setIsRegister(!isRegister)} 
+            className="w-full py-4 text-[10px] font-black uppercase opacity-40"
+          >
+            {isRegister ? 'Já tem conta? Entre aqui' : 'Não tem conta? Registre-se'}
+          </button>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const pesoNum = parseFloat(userStats?.peso || 0);
   const alturaNum = parseFloat(userStats?.altura || 0);
