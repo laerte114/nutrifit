@@ -61,8 +61,26 @@ const App = () => {
   }
 }, []);
 
+  const fetchMeals = async () => {
+  // Se não tem usuário ou e-mail, não faz nada para não dar erro
+  if (!user?.email) return;
+
+  try {
+    // Busca as refeições do usuário logado na data selecionada
+    const res = await fetch(`${API_URL}/refeicoes/${user.email}/${date}`);
+    const data = await res.json();
+    
+    if (res.ok) {
+      // Atualiza o estado das refeições que aparece na lista
+      setMeals(data); 
+    }
+  } catch (err) {
+    console.error("Erro ao buscar refeições do servidor:", err);
+  }
+};
+
   useEffect(() => {
-  if (authMode === 'app') {
+  if (authMode === 'app' && user?.email) {
     fetchMeals();
   }
 }, [date, user, authMode]);
@@ -70,7 +88,7 @@ const App = () => {
   const addMeal = async (alimento) => {
   // 1. Organiza os dados
   const dadosParaEnviar = {
-    email: user.email,
+    email: user?.email,
     alimento: alimento,
     data: date 
   };

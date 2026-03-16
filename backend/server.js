@@ -12,21 +12,6 @@ app.use(cors());
 const SECRET_KEY = process.env.SECRET_KEY || "sua_chave_secreta_aqui";
 const mongoURI = process.env.MONGO_URI;
 
-const fetchMeals = async () => {
-  // Só tenta buscar se o usuário estiver logado e tivermos o e-mail dele
-  if (!user || !user.email) return;
-
-  try {
-    const res = await fetch(`${API_URL}/refeicoes/${user.email}/${date}`);
-    const data = await res.json();
-    
-    // Atualiza o estado da lista de refeições que aparece na tela
-    setMeals(data); 
-  } catch (err) {
-    console.error("Erro ao buscar refeições:", err);
-  }
-};
-
 // ==========================================
 // 1. SCHEMAS (Modelos de Dados)
 // ==========================================
@@ -277,13 +262,6 @@ app.post('/stats', async (req, res) => {
 // ==========================================
 // 7. INICIALIZAÇÃO
 // ==========================================
-
-  app.post('/refeicoes', async (req, res) => {
-  const novaRefeicao = new Meal(req.body); 
-  
-  await novaRefeicao.save(); 
-  res.json(novaRefeicao);
-});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Servidor NutriFit rodando na porta ${PORT}`));
