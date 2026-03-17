@@ -1,5 +1,3 @@
-CODIGO FRONTEND
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   TrendingUp, User, Plus, Trash2, ChevronRight, Settings2, 
