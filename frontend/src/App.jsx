@@ -16,16 +16,14 @@ const formatarDataParaBR = (dataStr) => {
 
 const App = () => {
 
-  const [user, setUser] = useState(null);
-  const [authMode, setAuthMode] = useState('login'); 
+  const session = localStorage.getItem('nf:session');
+  const userObj = session ? JSON.parse(session) : null;
+
+  const [currentUser, setCurrentUser] = useState(userObj);
+  const [authMode, setAuthMode] = useState(userObj ? 'app' : 'login');
   const [isRegister, setIsRegister] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [loginData, setLoginData] = useState({ nome: '', email: '', password: '' });
-
-  const session = localStorage.getItem('nf:session');
-  const userObj = session ? JSON.parse(session) : null;
-  const [currentUser, setCurrentUser] = useState(userObj);
-  const [authMode, setAuthMode] = useState(userObj ? 'app' : 'login'); 
   const [dark, setDark] = useState(localStorage.getItem('nf:theme') === 'dark');
 
   const [step, setStep] = useState('resultado'); 
@@ -62,20 +60,13 @@ const App = () => {
 }, []);
 
   const fetchMeals = async () => {
-  // Se não tem usuário ou e-mail, não faz nada para não dar erro
-  if (!user?.email) return;
+  if (!currentUser?.email) return; // Use currentUser aqui
 
   try {
-    // Busca as refeições do usuário logado na data selecionada
-    const res = await fetch(`${API_URL}/refeicoes/${user.email}/${date}`);
-    const data = await res.json();
-    
-    if (res.ok) {
-      // Atualiza o estado das refeições que aparece na lista
-      setMeals(data); 
-    }
+    const dataBR = formatarDataParaBR(dataSelecionada); // Use a variável correta
+    const res = await fetch(`${API_URL}/refeicoes/${currentUser.email}/${encodeURIComponent(dataBR)}`);
   } catch (err) {
-    console.error("Erro ao buscar refeições do servidor:", err);
+    console.error(err);
   }
 };
 
@@ -123,20 +114,21 @@ const handleAuth = async () => {
     const data = await res.json();
 
     if (res.ok) {
-      // Salva no navegador para persistência
-      localStorage.setItem('nf:session', JSON.stringify({
+      const sessao = {
         nome: data.nome,
         email: data.email,
         token: data.token
-      }));
+      };
+      localStorage.setItem('nf:session', JSON.stringify(sessao));
       
-      setUser(data);
+      // ATUALIZE AMBOS AQUI:
+      setCurrentUser(sessao); 
       setAuthMode('app');
     } else {
       alert(data.message || "E-mail ou senha incorretos.");
     }
   } catch (err) {
-    alert("Não foi possível conectar ao servidor. Tente novamente.");
+    alert("Erro ao conectar ao servidor.");
   } finally {
     setAuthLoading(false);
   }
