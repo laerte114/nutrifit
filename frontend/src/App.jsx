@@ -29,9 +29,9 @@ const App = () => {
   const [step, setStep] = useState('resultado'); 
   const [profileFlow, setProfileFlow] = useState('menu');
   
-  const hojeStr = new Date().toISOString().split('T')[0];
+  const hojeStr = new dataSelecionada().toISOString().split('T')[0];
   const [dataSelecionada, setDataSelecionada] = useState(hojeStr);
-  const [viewDate, setViewDate] = useState(new Date());
+  const [viewDate, setViewDate] = useState(new dataSelecionada());
 
   const [historico, setHistorico] = useState({}); 
   const [meusAlimentos, setMeusAlimentos] = useState({});
@@ -59,29 +59,28 @@ const App = () => {
   }
 }, []);
 
-  const fetchMeals = async () => {
-  if (!currentUser?.email) return; // Use currentUser aqui
+  const fetchMeals = useCallback(async () => {
+  if (!currentUser?.email) return;
 
   try {
-    const dataBR = formatarDataParaBR(dataSelecionada); // Use a variável correta
+    const dataBR = formatarDataParaBR(dataSelecionada); 
     const res = await fetch(`${API_URL}/refeicoes/${currentUser.email}/${encodeURIComponent(dataBR)}`);
+    // ... resto do código
   } catch (err) {
     console.error(err);
   }
-};
+},
 
   useEffect(() => {
-  if (authMode === 'app' && user?.email) {
-    fetchMeals();
-  }
-}, [date, user, authMode]);
+  fetchMeals();
+}, [fetchMeals]);
 
   const addMeal = async (alimento) => {
   // 1. Organiza os dados
   const dadosParaEnviar = {
     email: user?.email,
     alimento: alimento,
-    data: date 
+    data: dataSelecionada 
   };
 
   // 2. Faz a entrega para o backend (o fetch)
@@ -144,7 +143,7 @@ const handleLogout = () => {
     const carregarBaseAlimentos = async () => {
       if (!currentUser?.email) return;
       try {
-        const res = await fetch(`${API_URL}/alimentos-base/${currentUser.email}`);
+        const res = await fetch(`${API_URL}/alimentos-base/${currentUser?.email}`);
         if (res.ok) {
           const todosOsAlimentos = await res.json();
           const mapaGeral = {};   
@@ -170,7 +169,7 @@ const handleLogout = () => {
 
           setDbFixa(mapaGeral);
           setMeusAlimentos(mapaUsuario);
-          localStorage.setItem(`nf:meus:${currentUser.email}`, JSON.stringify(mapaUsuario));
+          localStorage.setItem(`nf:meus:${currentUser?.email}`, JSON.stringify(mapaUsuario));
         }
       } catch (err) {
         console.error("❌ Erro na base de dados:", err);
@@ -185,12 +184,12 @@ const handleLogout = () => {
       if (!currentUser?.email) return;
       const dataBR = formatarDataParaBR(dataSelecionada);
       try {
-        const resRef = await fetch(`${API_URL}/refeicoes/${currentUser.email}/${encodeURIComponent(dataBR)}`);
+        const resRef = await fetch(`${API_URL}/refeicoes/${currentUser?.email}/${encodeURIComponent(dataBR)}`);
         if (resRef.ok) {
           const dados = await resRef.json();
           setHistorico(prev => ({ ...prev, [dataSelecionada]: dados }));
         }
-        const resStats = await fetch(`${API_URL}/stats/${currentUser.email}`);
+        const resStats = await fetch(`${API_URL}/stats/${currentUser?.email}`);
         if (resStats.ok) {
           const statsNuvem = await resStats.json();
           if (statsNuvem && statsNuvem.peso) setUserStats(statsNuvem);
@@ -264,7 +263,7 @@ const handleAddAlimento = async () => {
     }
 
     const novaRef = {
-      email: currentUser.email, 
+      email: currentUser?.email, 
       data: formatarDataParaBR(dataSelecionada),
       alimento: { 
         nome: alInput.nome.toUpperCase(), 
@@ -300,7 +299,7 @@ const handleAddAlimento = async () => {
   const gerarRelatorioSemanal = useCallback(() => {
     const ultimos7Dias = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(); d.setDate(d.getDate() - i);
+      const d = new dataSelecionada(); d.setDate(d.getDate() - i);
       ultimos7Dias.push(d.toISOString().split('T')[0]);
     }
     let sK = 0, sP = 0, sC = 0, sG = 0, diasA = 0;
@@ -588,13 +587,13 @@ const handleAddAlimento = async () => {
 
                 <div className={`p-8 rounded-[3.5rem] border-2 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-xl'}`}>
                   <div className="flex justify-between mb-8 items-center font-black uppercase italic">
-                    <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-2 hover:text-indigo-500 transition-colors">
+                    <button onClick={() => setViewDate(new dataSelecionada(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-2 hover:text-indigo-500 transition-colors">
                       <ChevronLeft />
                     </button>
                     <span className="text-xs tracking-widest">
                       {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                     </span>
-                    <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-2 hover:text-indigo-500 transition-colors">
+                    <button onClick={() => setViewDate(new dataSelecionada(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-2 hover:text-indigo-500 transition-colors">
                       <ChevronRight />
                     </button>
                   </div>
@@ -604,14 +603,14 @@ const handleAddAlimento = async () => {
                       <span key={idx} className="text-[8px] font-black opacity-20 text-center">{d}</span>
                     ))}
                     
-                    {[...Array(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate())].map((_, i) => {
+                    {[...Array(new dataSelecionada(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate())].map((_, i) => {
                       const diaNum = i + 1;
-                      const dLoop = new Date(viewDate.getFullYear(), viewDate.getMonth(), diaNum);
+                      const dLoop = new dataSelecionada(viewDate.getFullYear(), viewDate.getMonth(), diaNum);
                       const dataLoopStr = dLoop.toISOString().split('T')[0];
                       
                       const isHoje = dataLoopStr === hojeStr;
                       const isSelecionado = dataLoopStr === dataSelecionada;
-                      const isFuturo = dLoop > new Date().setHours(23, 59, 59, 999);
+                      const isFuturo = dLoop > new dataSelecionada().setHours(23, 59, 59, 999);
 
                        return (
                         <button 
@@ -701,13 +700,13 @@ const handleAddAlimento = async () => {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            email: currentUser.email,
+                            email: currentUser?.email,
                             ...userStats
                           })
                         });
 
                         if (res.ok) {
-                          localStorage.setItem(`nf:stats:${currentUser.email}`, JSON.stringify(userStats));
+                          localStorage.setItem(`nf:stats:${currentUser?.email}`, JSON.stringify(userStats));
                           alert("Bio-Medidas sincronizadas na nuvem! ☁️🚀");
                           setProfileFlow('menu');
                         } else {
@@ -715,7 +714,7 @@ const handleAddAlimento = async () => {
                         }
                       } catch (err) {
                         console.error("Erro na sincronização:", err);
-                        localStorage.setItem(`nf:stats:${currentUser.email}`, JSON.stringify(userStats));
+                        localStorage.setItem(`nf:stats:${currentUser?.email}`, JSON.stringify(userStats));
                         setProfileFlow('menu');
                       }
                     }} 
@@ -765,7 +764,7 @@ const handleAddAlimento = async () => {
     // 1. Atualiza a tela imediatamente (UX)
     const atualizados = { ...meusAlimentos, [nome]: { ...alimentoOriginal, ...payload } };
     setMeusAlimentos(atualizados);
-    localStorage.setItem(`nf:meus:${currentUser.email}`, JSON.stringify(atualizados));
+    localStorage.setItem(`nf:meus:${currentUser?.email}`, JSON.stringify(atualizados));
     setNovoAlimento({ nome: '', c: '', p: '', cho: '', g: '', editing: null });
 
     // 2. Sincroniza com o Servidor
@@ -805,7 +804,7 @@ const handleAddAlimento = async () => {
     const n = { ...meusAlimentos }; 
     delete n[nome]; 
     setMeusAlimentos(n); 
-    localStorage.setItem(`nf:meus:${currentUser.email}`, JSON.stringify(n)); 
+    localStorage.setItem(`nf:meus:${currentUser?.email}`, JSON.stringify(n)); 
 
     // 2. Remove do Servidor
     if (idNoBanco) {
@@ -848,14 +847,14 @@ const handleAddAlimento = async () => {
         p: Number(novoAlimento.p || 0),
         cho: Number(novoAlimento.cho || 0),
         g: Number(novoAlimento.g || 0),
-        email: currentUser.email // Seu backend usa 'email' no POST /meus-alimentos
+        email: currentUser?.email // Seu backend usa 'email' no POST /meus-alimentos
       };
 
       // 2. Atualiza a tela localmente para ser instantâneo
       const chave = novoAlimento.nome.toLowerCase().trim();
       const a = { ...meusAlimentos, [chave]: payload }; 
       setMeusAlimentos(a); 
-      localStorage.setItem(`nf:meus:${currentUser.email}`, JSON.stringify(a)); 
+      localStorage.setItem(`nf:meus:${currentUser?.email}`, JSON.stringify(a)); 
       setNovoAlimento({ nome: '', c: '', p: '', cho: '', g: '', editing: null }); 
 
       // 3. Salva no banco de dados usando a rota correta: /meus-alimentos
