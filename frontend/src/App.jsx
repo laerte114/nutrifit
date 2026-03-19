@@ -15,6 +15,12 @@ const formatarDataParaBR = (dataStr) => {
 };
 
 const App = () => {
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' ou 'register'
+  const [authData, setAuthData] = useState({ nome: '', email: '', password: '' });
+  const [authError, setAuthError] = useState('');
+
   const session = localStorage.getItem('nf:session');
   const userObj = session ? JSON.parse(session) : null;
   const [currentUser, setCurrentUser] = useState(userObj);
@@ -44,6 +50,40 @@ const App = () => {
 
   const isDiaAnterior = dataSelecionada !== hojeStr;
   const [dbFixa, setDbFixa] = useState({});
+
+  const handleAuth = async (e) => {
+  e.preventDefault();
+  setAuthError('');
+  
+  const endpoint = authMode === 'login' ? '/login' : '/register';
+  
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(authData)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || data.error || 'Erro na autenticação');
+    }
+
+    if (authMode === 'login') {
+      // Salva o token de segurança e os dados do usuário
+      localStorage.setItem('nf:token', data.token);
+      setCurrentUser({ nome: data.nome, email: data.email });
+      setIsLoggedIn(true);
+    } else {
+      // Se cadastrou com sucesso, muda para a tela de login
+      alert('Cadastro realizado com sucesso! Faça seu login.');
+      setAuthMode('login');
+    }
+  } catch (err) {
+    setAuthError(err.message);
+  }
+};
 
   // 1. BUSCA DA BASE DE ALIMENTOS
   useEffect(() => {
@@ -230,21 +270,56 @@ const handleAddAlimento = async () => {
   const inputClass = `w-full p-4 rounded-2xl border-2 transition-all outline-none font-bold text-sm ${dark ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-800 focus:border-indigo-500'}`;
   const btnPrimary = `w-full p-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase italic shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
 
-  if (authMode !== 'app') {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <button 
-          onClick={() => { 
-            localStorage.setItem('nf:session', JSON.stringify({nome: 'USUÁRIO PREMIUM', email: 'user@nutrifit.com'})); 
-            window.location.reload(); 
-          }} 
-          className={btnPrimary}
-        >
-          Acessar NutriFit Premium
+  if (!isLoggedIn) {
+  return (
+    <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+      <form onSubmit={handleAuth} className={`w-full max-w-sm p-8 rounded-[3rem] border-2 space-y-6 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-2xl'}`}>
+        <h2 className="text-2xl font-black uppercase italic text-center text-indigo-500">
+          {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
+        </h2>
+        
+        {authError && <p className="text-rose-500 text-xs text-center font-bold uppercase">{authError}</p>}
+
+        {authMode === 'register' && (
+          <input 
+            type="text" 
+            placeholder="Seu Nome" 
+            value={authData.nome}
+            onChange={(e) => setAuthData({...authData, nome: e.target.value})}
+            className={inputClass} // Use a mesma classe de input que você já tem
+            required
+          />
+        )}
+        
+        <input 
+          type="email" 
+          placeholder="Seu E-mail" 
+          value={authData.email}
+          onChange={(e) => setAuthData({...authData, email: e.target.value})}
+          className={inputClass}
+          required
+        />
+        
+        <input 
+          type="password" 
+          placeholder="Sua Senha" 
+          value={authData.password}
+          onChange={(e) => setAuthData({...authData, password: e.target.value})}
+          className={inputClass}
+          required
+        />
+
+        <button type="submit" className="w-full p-4 bg-indigo-600 text-white rounded-2xl font-black uppercase italic text-sm shadow-lg">
+          {authMode === 'login' ? 'Acessar NutriFit' : 'Cadastrar'}
         </button>
-      </div>
-    );
-  }
+
+        <p className="text-center text-xs opacity-50 cursor-pointer" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+          {authMode === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
+        </p>
+      </form>
+    </div>
+  );
+}
 
   const pesoNum = parseFloat(userStats?.peso || 0);
   const alturaNum = parseFloat(userStats?.altura || 0);
