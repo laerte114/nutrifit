@@ -1,5 +1,3 @@
-CODIGO BACKEND
-
 require('dotenv').config(); // <-- Movido para a primeira linha!
 const express = require('express');
 const cors = require('cors');
