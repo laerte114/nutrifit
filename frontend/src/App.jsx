@@ -17,7 +17,6 @@ const formatarDataParaBR = (dataStr) => {
 const App = () => {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' ou 'register'
   const [authData, setAuthData] = useState({ nome: '', email: '', password: '' });
   const [authError, setAuthError] = useState('');
 
@@ -270,57 +269,6 @@ const handleAddAlimento = async () => {
   const inputClass = `w-full p-4 rounded-2xl border-2 transition-all outline-none font-bold text-sm ${dark ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-800 focus:border-indigo-500'}`;
   const btnPrimary = `w-full p-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase italic shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
 
-  if (!isLoggedIn) {
-  return (
-    <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      <form onSubmit={handleAuth} className={`w-full max-w-sm p-8 rounded-[3rem] border-2 space-y-6 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-2xl'}`}>
-        <h2 className="text-2xl font-black uppercase italic text-center text-indigo-500">
-          {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
-        </h2>
-        
-        {authError && <p className="text-rose-500 text-xs text-center font-bold uppercase">{authError}</p>}
-
-        {authMode === 'register' && (
-          <input 
-            type="text" 
-            placeholder="Seu Nome" 
-            value={authData.nome}
-            onChange={(e) => setAuthData({...authData, nome: e.target.value})}
-            className={inputClass} // Use a mesma classe de input que você já tem
-            required
-          />
-        )}
-        
-        <input 
-          type="email" 
-          placeholder="Seu E-mail" 
-          value={authData.email}
-          onChange={(e) => setAuthData({...authData, email: e.target.value})}
-          className={inputClass}
-          required
-        />
-        
-        <input 
-          type="password" 
-          placeholder="Sua Senha" 
-          value={authData.password}
-          onChange={(e) => setAuthData({...authData, password: e.target.value})}
-          className={inputClass}
-          required
-        />
-
-        <button type="submit" className="w-full p-4 bg-indigo-600 text-white rounded-2xl font-black uppercase italic text-sm shadow-lg">
-          {authMode === 'login' ? 'Acessar NutriFit' : 'Cadastrar'}
-        </button>
-
-        <p className="text-center text-xs opacity-50 cursor-pointer" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-          {authMode === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
-        </p>
-      </form>
-    </div>
-  );
-}
-
   const pesoNum = parseFloat(userStats?.peso || 0);
   const alturaNum = parseFloat(userStats?.altura || 0);
   const imcCalculado = (pesoNum > 0 && alturaNum > 0) ? (pesoNum / ((alturaNum / 100) ** 2)).toFixed(1) : "0.0";
@@ -336,8 +284,59 @@ const handleAddAlimento = async () => {
   const status = getImcStatus(imcCalculado);
 
   return (
-    <div className={`min-h-screen pb-32 transition-colors duration-500 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      
+  <div className={`min-h-screen pb-32 transition-colors duration-500 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+    
+    {/* 1. SE NÃO ESTIVER LOGADO: TELA DE ACESSO */}
+    {!isLoggedIn ? (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <form onSubmit={handleAuth} className={`w-full max-w-sm p-8 rounded-[3rem] border-2 space-y-6 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-2xl'}`}>
+          <h2 className="text-2xl font-black uppercase italic text-center text-indigo-500">
+            {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
+          </h2>
+          
+          {authError && <p className="text-rose-500 text-xs text-center font-bold uppercase">{authError}</p>}
+
+          {authMode === 'register' && (
+            <input 
+              type="text" 
+              placeholder="Seu Nome" 
+              value={authData.nome}
+              onChange={(e) => setAuthData({...authData, nome: e.target.value})}
+              className={inputClass}
+              required
+            />
+          )}
+          
+          <input 
+            type="email" 
+            placeholder="Seu E-mail" 
+            value={authData.email}
+            onChange={(e) => setAuthData({...authData, email: e.target.value})}
+            className={inputClass}
+            required
+          />
+          
+          <input 
+            type="password" 
+            placeholder="Sua Senha" 
+            value={authData.password}
+            onChange={(e) => setAuthData({...authData, password: e.target.value})}
+            className={inputClass}
+            required
+          />
+
+          <button type="submit" className="w-full p-4 bg-indigo-600 text-white rounded-2xl font-black uppercase italic text-sm shadow-lg">
+            {authMode === 'login' ? 'Acessar NutriFit' : 'Cadastrar'}
+          </button>
+
+          <p className="text-center text-xs opacity-50 cursor-pointer" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+            {authMode === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
+          </p>
+        </form>
+      </div>
+    ) : (
+
+ 
       {showRelatorio && dadosSemana && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/60">
           <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] border-2 shadow-2xl ${dark ? 'bg-slate-900 border-indigo-500/30 text-white' : 'bg-white border-slate-100'}`}>
