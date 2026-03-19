@@ -269,255 +269,208 @@ const handleAddAlimento = async () => {
   const inputClass = `w-full p-4 rounded-2xl border-2 transition-all outline-none font-bold text-sm ${dark ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-800 focus:border-indigo-500'}`;
   const btnPrimary = `w-full p-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase italic shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
 
+  // --- LÓGICA DE CÁLCULO (ANTES DO RETURN) ---
   const pesoNum = parseFloat(userStats?.peso || 0);
   const alturaNum = parseFloat(userStats?.altura || 0);
-  const imcCalculado = (pesoNum > 0 && alturaNum > 0) ? (pesoNum / ((alturaNum / 100) ** 2)).toFixed(1) : "0.0";
+  const imcCalculado = (pesoNum > 0 && alturaNum > 0) 
+    ? (pesoNum / ((alturaNum / 100) ** 2)).toFixed(1) 
+    : "0.0";
 
   const getImcStatus = (valor) => {
     const v = parseFloat(valor) || 0;
-    if (v === 0) return { label: "Dados pendentes", color: "text-slate-400", bg: "bg-slate-400", bgLight: "bg-slate-100", pct: "0%" };
-    if (v < 18.5) return { label: "Abaixo do Peso", color: "text-blue-500", bg: "bg-blue-500", bgLight: "bg-blue-500/10", pct: "25%" };
-    if (v < 25) return { label: "Peso Ideal", color: "text-emerald-500", bg: "bg-emerald-500", bgLight: "bg-emerald-500/10", pct: "50%" };
-    if (v < 30) return { label: "Sobrepeso", color: "text-orange-500", bg: "bg-orange-500", bgLight: "bg-orange-500/10", pct: "75%" };
-    return { label: "Obesidade", color: "text-red-500", bg: "bg-red-500", bgLight: "bg-red-500/10", pct: "100%" };
+    if (v === 0) return { label: "Dados pendentes", color: "text-slate-400", bg: "bg-slate-400", badge: "bg-slate-400/10", pct: "0%" };
+    if (v < 18.5) return { label: "Abaixo do Peso", color: "text-blue-500", bg: "bg-blue-500", badge: "bg-blue-500/10", pct: "25%" };
+    if (v < 25) return { label: "Peso Ideal", color: "text-emerald-500", bg: "bg-emerald-500", badge: "bg-emerald-500/10", pct: "50%" };
+    if (v < 30) return { label: "Sobrepeso", color: "text-orange-500", bg: "bg-orange-500", badge: "bg-orange-500/10", pct: "75%" };
+    return { label: "Obesidade", color: "text-red-500", bg: "bg-red-500", badge: "bg-red-500/10", pct: "100%" };
   };
+
   const status = getImcStatus(imcCalculado);
 
+  // --- RENDERIZAÇÃO ---
   return (
-  <div className={`min-h-screen pb-32 transition-colors duration-500 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
-    
-    {/* 1. SE NÃO ESTIVER LOGADO: TELA DE ACESSO */}
-    {!isLoggedIn ? (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <form onSubmit={handleAuth} className={`w-full max-w-sm p-8 rounded-[3rem] border-2 space-y-6 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-2xl'}`}>
-          <h2 className="text-2xl font-black uppercase italic text-center text-indigo-500">
-            {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
-          </h2>
-          
-          {authError && <p className="text-rose-500 text-xs text-center font-bold uppercase">{authError}</p>}
+    <div className={`min-h-screen pb-32 transition-colors duration-500 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+      
+      {!isLoggedIn ? (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <form onSubmit={handleAuth} className={`w-full max-w-sm p-8 rounded-[3rem] border-2 space-y-6 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-2xl'}`}>
+            <h2 className="text-2xl font-black uppercase italic text-center text-indigo-500">
+              {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
+            </h2>
+            
+            {authError && <p className="text-rose-500 text-xs text-center font-bold uppercase">{authError}</p>}
 
-          {authMode === 'register' && (
+            {authMode === 'register' && (
+              <input 
+                type="text" 
+                placeholder="Seu Nome" 
+                value={authData.nome}
+                onChange={(e) => setAuthData({...authData, nome: e.target.value})}
+                className={inputClass}
+                required
+              />
+            )}
+            
             <input 
-              type="text" 
-              placeholder="Seu Nome" 
-              value={authData.nome}
-              onChange={(e) => setAuthData({...authData, nome: e.target.value})}
+              type="email" 
+              placeholder="Seu E-mail" 
+              value={authData.email}
+              onChange={(e) => setAuthData({...authData, email: e.target.value})}
               className={inputClass}
               required
             />
-          )}
-          
-          <input 
-            type="email" 
-            placeholder="Seu E-mail" 
-            value={authData.email}
-            onChange={(e) => setAuthData({...authData, email: e.target.value})}
-            className={inputClass}
-            required
-          />
-          
-          <input 
-            type="password" 
-            placeholder="Sua Senha" 
-            value={authData.password}
-            onChange={(e) => setAuthData({...authData, password: e.target.value})}
-            className={inputClass}
-            required
-          />
-
-          <button type="submit" className="w-full p-4 bg-indigo-600 text-white rounded-2xl font-black uppercase italic text-sm shadow-lg">
-            {authMode === 'login' ? 'Acessar NutriFit' : 'Cadastrar'}
-          </button>
-
-          <p className="text-center text-xs opacity-50 cursor-pointer" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-            {authMode === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
-          </p>
-        </form>
-      </div>
-    ) : (
-
- 
-      {showRelatorio && dadosSemana && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/60">
-          <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] border-2 shadow-2xl ${dark ? 'bg-slate-900 border-indigo-500/30 text-white' : 'bg-white border-slate-100'}`}>
-            <button onClick={() => setShowRelatorio(false)} className="absolute top-6 right-6 p-2 opacity-30 hover:opacity-100 transition-opacity"><Plus size={24} className="rotate-45" /></button>
-            <div className="text-center space-y-6">
-              <div className="space-y-1"><Crown className="text-amber-500 mx-auto"/><h2 className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Relatório Semanal</h2></div>
-              <div><p className="text-[10px] font-black uppercase text-indigo-500 mb-1">Média Calórica</p><div className="flex items-baseline justify-center gap-2"><span className="text-7xl font-black italic tracking-tighter">{dadosSemana.kcal}</span><span className="text-lg font-black opacity-20 uppercase">kcal</span></div></div>
-              <div className="grid grid-cols-3 gap-4 py-6 border-y border-dashed border-slate-700/20">
-                <div><p className="text-[8px] font-black uppercase text-orange-500">Prot</p><p className="text-xl font-black italic">{dadosSemana.p}g</p></div>
-                <div><p className="text-[8px] font-black uppercase text-cyan-500">Carb</p><p className="text-xl font-black italic">{dadosSemana.cho}g</p></div>
-                <div><p className="text-[8px] font-black uppercase text-amber-300">Gord</p><p className="text-xl font-black italic">{dadosSemana.g}g</p></div>
-              </div>
-              <div className="p-5 rounded-3xl bg-indigo-600/5 border border-indigo-600/10"><p className="text-[11px] font-bold italic leading-relaxed opacity-80 text-center">"{dadosSemana.insight}"</p></div>
-              <button onClick={() => setShowRelatorio(false)} className={btnPrimary}>Fechar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <header className="max-w-md mx-auto px-6 pt-12 flex justify-between items-center">
-        <div><p className="text-[10px] font-black opacity-40 uppercase mb-1">{formatarDataParaBR(dataSelecionada)}</p><div className="flex items-center gap-2 font-black text-2xl uppercase italic tracking-tighter">{currentUser?.nome} <Crown size={18} className="text-amber-500 fill-amber-500" /></div></div>
-        <div className="flex gap-3">
-          <button onClick={gerarRelatorioSemanal} className="p-4 rounded-2xl bg-amber-500/10 text-amber-600 active:scale-90"><BarChart3 size={20}/></button>
-          <button onClick={() => {
-            const newDark = !dark;
-            setDark(newDark);
-            localStorage.setItem('nf:theme', newDark ? 'dark' : 'light');
-          }} className="p-4 rounded-2xl bg-indigo-600/10 text-indigo-600 active:scale-90">{dark ? <Sun size={20}/> : <Moon size={20}/>}</button>
-        </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-6 mt-10">
-        {step === 'resultado' ? (
-          <div className="space-y-6">
-            {isDiaAnterior && (
-              <div className={`flex items-center gap-3 p-4 rounded-3xl border-2 ${dark ? 'bg-indigo-500/5 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}`}>
-                <History size={18} className="shrink-0" />
-                <p className="text-[10px] font-black uppercase italic leading-tight">
-                  Dias anteriores são apenas para visualização
-                </p>
-              </div>
-            )}
             
-            <div className={`p-10 rounded-[4rem] text-center border-4 transition-all duration-500 ${totais.kcal > metas.kcal ? 'border-rose-500 bg-rose-500/5' : 'border-emerald-500 bg-emerald-500/5'}`}>
-              <div className="flex items-baseline justify-center gap-2">
-                <span className={`text-[100px] leading-none font-black italic tracking-tighter ${totais.kcal > metas.kcal ? 'text-rose-500' : 'text-emerald-500'}`}>{Math.round(totais.kcal)}</span>
-                <span className="text-2xl font-black italic opacity-20">/ {metas.kcal}</span>
+            <input 
+              type="password" 
+              placeholder="Sua Senha" 
+              value={authData.password}
+              onChange={(e) => setAuthData({...authData, password: e.target.value})}
+              className={inputClass}
+              required
+            />
+
+            <button type="submit" className="w-full p-4 bg-indigo-600 text-white rounded-2xl font-black uppercase italic text-sm shadow-lg">
+              {authMode === 'login' ? 'Acessar NutriFit' : 'Cadastrar'}
+            </button>
+
+            <p className="text-center text-xs opacity-50 cursor-pointer" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+              {authMode === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
+            </p>
+          </form>
+        </div>
+      ) : (
+        <>
+          {showRelatorio && dadosSemana && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/60">
+              <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] border-2 shadow-2xl ${dark ? 'bg-slate-900 border-indigo-500/30 text-white' : 'bg-white border-slate-100'}`}>
+                <button onClick={() => setShowRelatorio(false)} className="absolute top-6 right-6 p-2 opacity-30 hover:opacity-100 transition-opacity"><Plus size={24} className="rotate-45" /></button>
+                <div className="text-center space-y-6">
+                  <div className="space-y-1"><Crown className="text-amber-500 mx-auto"/><h2 className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Relatório Semanal</h2></div>
+                  <div><p className="text-[10px] font-black uppercase text-indigo-500 mb-1">Média Calórica</p><div className="flex items-baseline justify-center gap-2"><span className="text-7xl font-black italic tracking-tighter">{dadosSemana.kcal}</span><span className="text-lg font-black opacity-20 uppercase">kcal</span></div></div>
+                  <div className="grid grid-cols-3 gap-4 py-6 border-y border-dashed border-slate-700/20">
+                    <div><p className="text-[8px] font-black uppercase text-orange-500">Prot</p><p className="text-xl font-black italic">{dadosSemana.p}g</p></div>
+                    <div><p className="text-[8px] font-black uppercase text-cyan-500">Carb</p><p className="text-xl font-black italic">{dadosSemana.cho}g</p></div>
+                    <div><p className="text-[8px] font-black uppercase text-amber-300">Gord</p><p className="text-xl font-black italic">{dadosSemana.g}g</p></div>
+                  </div>
+                  <div className="p-5 rounded-3xl bg-indigo-600/5 border border-indigo-600/10"><p className="text-[11px] font-bold italic leading-relaxed opacity-80 text-center">"{dadosSemana.insight}"</p></div>
+                  <button onClick={() => setShowRelatorio(false)} className={btnPrimary}>Fechar</button>
+                </div>
               </div>
-              <div className="mt-8 pt-8 border-t border-dashed border-slate-700/20 space-y-4 text-left">
-                {incompleto && (
-                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-2">
-                    <AlertTriangle size={12} className="text-amber-500" />
-                    <p className="text-[8px] font-black text-amber-500 uppercase italic">⚠️ Alimentos sem macros no log</p>
+            </div>
+          )}
+
+          <header className="max-w-md mx-auto px-6 pt-12 flex justify-between items-center">
+            <div><p className="text-[10px] font-black opacity-40 uppercase mb-1">{formatarDataParaBR(dataSelecionada)}</p><div className="flex items-center gap-2 font-black text-2xl uppercase italic tracking-tighter">{currentUser?.nome} <Crown size={18} className="text-amber-500 fill-amber-500" /></div></div>
+            <div className="flex gap-3">
+              <button onClick={gerarRelatorioSemanal} className="p-4 rounded-2xl bg-amber-500/10 text-amber-600 active:scale-90"><BarChart3 size={20}/></button>
+              <button onClick={() => {
+                const newDark = !dark;
+                setDark(newDark);
+                localStorage.setItem('nf:theme', newDark ? 'dark' : 'light');
+              }} className="p-4 rounded-2xl bg-indigo-600/10 text-indigo-600 active:scale-90">{dark ? <Sun size={20}/> : <Moon size={20}/>}</button>
+            </div>
+          </header>
+
+          <main className="max-w-md mx-auto px-6 mt-10">
+            {step === 'resultado' ? (
+              <div className="space-y-6">
+                {isDiaAnterior && (
+                  <div className={`flex items-center gap-3 p-4 rounded-3xl border-2 ${dark ? 'bg-indigo-500/5 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-100 text-indigo-600'}`}>
+                    <History size={18} className="shrink-0" />
+                    <p className="text-[10px] font-black uppercase italic leading-tight">Dias anteriores são apenas para visualização</p>
                   </div>
                 )}
-                {[
-                  { label: 'Prot', atual: totais.p, meta: metas.p, cor: 'bg-orange-500', texto: 'text-orange-500' },
-                  { label: 'Carb', atual: totais.cho, meta: metas.cho, cor: 'bg-cyan-500', texto: 'text-cyan-500' },
-                  { label: 'Gord', atual: totais.g, meta: metas.g, cor: 'bg-amber-300', texto: 'text-amber-300' }
-                ].map(m => (
-                  <div key={m.label} className="space-y-1">
-                    <div className="flex justify-between items-end">
-                      <span className={`text-[10px] font-black uppercase ${m.texto}`}>{m.label}</span>
-                      <span className="text-[9px] opacity-40 font-bold uppercase">{Math.round(m.atual)}g / {m.meta}g</span>
-                    </div>
-                    <div className={`h-2 w-full rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                      <div className={`h-full transition-all duration-1000 ${m.cor}`} style={{ width: `${Math.min((m.atual / m.meta) * 100, 100)}%` }} />
-                    </div>
+                
+                <div className={`p-10 rounded-[4rem] text-center border-4 transition-all duration-500 ${totais.kcal > metas.kcal ? 'border-rose-500 bg-rose-500/5' : 'border-emerald-500 bg-emerald-500/5'}`}>
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className={`text-[100px] leading-none font-black italic tracking-tighter ${totais.kcal > metas.kcal ? 'text-rose-500' : 'text-emerald-500'}`}>{Math.round(totais.kcal)}</span>
+                    <span className="text-2xl font-black italic opacity-20">/ {metas.kcal}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {!isDiaAnterior && (
-              <div className="flex gap-3 items-start">
-                <div className="relative" style={{ flex: 2 }}>
-                  <input placeholder="ALIMENTO..." value={alInput.nome} onChange={e => {
-                    const v = e.target.value; setAlInput({ ...alInput, nome: v });
-                    if (v.length > 1) setSugestoes(Object.keys(dbTotal).filter(n => n.toLowerCase().includes(v.toLowerCase())));
-                    else setSugestoes([]);
-                  }} className={inputClass} />
-                  {sugestoes.length > 0 && (
-                    <div className={`absolute z-50 w-full mt-2 rounded-2xl border-2 shadow-2xl overflow-hidden ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
-                      {sugestoes.slice(0, 5).map(s => (
-                        <button key={s} onClick={() => { setAlInput({ ...alInput, nome: s.toUpperCase() }); setSugestoes([]); }} className="w-full p-4 text-left text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white">{s}</button>
-                      ))}
-                    </div>
-                  )}
+                  <div className="mt-8 pt-8 border-t border-dashed border-slate-700/20 space-y-4 text-left">
+                    {[
+                      { label: 'Prot', atual: totais.p, meta: metas.p, cor: 'bg-orange-500', texto: 'text-orange-500' },
+                      { label: 'Carb', atual: totais.cho, meta: metas.cho, cor: 'bg-cyan-500', texto: 'text-cyan-500' },
+                      { label: 'Gord', atual: totais.g, meta: metas.g, cor: 'bg-amber-300', texto: 'text-amber-300' }
+                    ].map(m => (
+                      <div key={m.label} className="space-y-1">
+                        <div className="flex justify-between items-end">
+                          <span className={`text-[10px] font-black uppercase ${m.texto}`}>{m.label}</span>
+                          <span className="text-[9px] opacity-40 font-bold uppercase">{Math.round(m.atual)}g / {m.meta}g</span>
+                        </div>
+                        <div className={`h-2 w-full rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                          <div className={`h-full transition-all duration-1000 ${m.cor}`} style={{ width: `${Math.min((m.atual / m.meta) * 100, 100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <input placeholder="G" type="number" value={alInput.gramas} onChange={e => setAlInput({ ...alInput, gramas: e.target.value })} className={inputClass} style={{ flex: 1 }} />
-                <button onClick={handleAddAlimento} className="p-5 rounded-3xl bg-indigo-600 text-white shadow-lg active:scale-90"><Plus /></button>
-              </div>
-            )}
 
-            <div className="space-y-4 pb-20">
-              {(historico[dataSelecionada] || []).map(item => {
-                const cV = Number(item.cal) || 0;
-                const pV = Number(item.p) || 0;
-                const choV = Number(item.cho) || 0;
-                const gV = Number(item.g) || 0;
-                return (
-                  <div key={item._id} className={`p-6 rounded-[2.5rem] border-2 flex justify-between items-center ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-sm'}`}>
-                    <div className="flex-1">
-                      <p className="font-black text-sm uppercase italic">{item.nome}</p>
-                      <div className="flex gap-2 items-center mt-1">
-                        <span className="text-[9px] opacity-40 font-bold uppercase">{item.gramas}G • {Math.round(cV)} KCAL</span>
-                        {(pV > 0 || choV > 0 || gV > 0) && (
-                          <div className="flex gap-2 border-l pl-2 border-slate-700/20">
-                            <span className="text-[9px] font-black text-orange-500">P:{Math.round(pV)}g</span>
-                            <span className="text-[9px] font-black text-cyan-500">C:{Math.round(choV)}g</span>
-                            <span className="text-[9px] font-black text-amber-300">G:{Math.round(gV)}g</span>
+                {!isDiaAnterior && (
+                  <div className="flex gap-3 items-start">
+                    <div className="relative" style={{ flex: 2 }}>
+                      <input placeholder="ALIMENTO..." value={alInput.nome} onChange={e => {
+                        const v = e.target.value; setAlInput({ ...alInput, nome: v });
+                        if (v.length > 1) setSugestoes(Object.keys(dbTotal).filter(n => n.toLowerCase().includes(v.toLowerCase())));
+                        else setSugestoes([]);
+                      }} className={inputClass} />
+                    </div>
+                    <input placeholder="G" type="number" value={alInput.gramas} onChange={e => setAlInput({ ...alInput, gramas: e.target.value })} className={inputClass} style={{ flex: 1 }} />
+                    <button onClick={handleAddAlimento} className="p-5 rounded-3xl bg-indigo-600 text-white shadow-lg active:scale-90"><Plus /></button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6 pb-24">
+                {profileFlow === 'menu' ? (
+                  <div className="space-y-4">
+                    <button onClick={() => setProfileFlow('calendario')} className={`w-full p-8 rounded-[2.5rem] border-2 flex justify-between items-center transition-all active:scale-95 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-xl'}`}>
+                      <span className="flex items-center gap-4 text-indigo-500 font-black uppercase italic"><History /> Calendário</span>
+                      <ChevronRight />
+                    </button>
+
+                    <button onClick={() => setProfileFlow('alimentos')} className={`w-full p-8 rounded-[2.5rem] border-2 flex justify-between items-center transition-all active:scale-95 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-xl'}`}>
+                      <span className="flex items-center gap-4 text-amber-500 font-black uppercase italic"><UtensilsCrossed /> Meus Alimentos</span>
+                      <ChevronRight />
+                    </button>
+
+                    {/* CARD DE IMC CORRIGIDO */}
+                    <div className={`p-6 rounded-[2.5rem] border-2 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-sm'}`}>
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Activity size={14} className={dark ? 'text-indigo-400' : 'text-indigo-600'} />
+                            <span className="text-[10px] font-black uppercase opacity-40">Bio-Status</span>
                           </div>
-                        )}
+                          <h2 className="text-4xl font-black italic tracking-tighter flex items-baseline gap-1">
+                            {imcCalculado} <span className="text-xs font-medium not-italic opacity-30 uppercase">IMC</span>
+                          </h2>
+                        </div>
+                        <div className="text-right">
+                          <span className={`inline-block text-[10px] font-black uppercase px-3 py-2 rounded-xl shadow-sm ${status.badge} ${status.color}`}>
+                            {status.label}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="relative h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out ${status.bg}`} style={{ width: status.pct, minWidth: '8%' }} />
                       </div>
                     </div>
-                    {!isDiaAnterior && (
-                      <button onClick={async () => {
-                        await fetch(`${API_URL}/refeicoes/${item._id}`, { method: 'DELETE' });
-                        setHistorico(prev => ({ ...prev, [dataSelecionada]: (prev[dataSelecionada] || []).filter(x => x._id !== item._id) }));
-                      }} className="text-rose-500/20 hover:text-rose-500 p-2"><Trash2 size={20} /></button>
-                    )}
+
+                    <button onClick={() => setProfileFlow('setup')} className="w-full p-8 rounded-[2.5rem] bg-indigo-600 text-white font-black flex justify-between items-center italic uppercase shadow-xl hover:bg-indigo-700 transition-all">
+                      <span className="flex items-center gap-4"><Settings2 /> Bio-Medidas</span>
+                      <ChevronRight />
+                    </button>
                   </div>
-                )
-              })}
-            </div>
-          </div>
-        ) : (
-
-<div className="space-y-6 pb-24">
-            {profileFlow === 'menu' ? (
-              <div className="space-y-4">
-                <button onClick={() => setProfileFlow('calendario')} className={`w-full p-8 rounded-[2.5rem] border-2 flex justify-between items-center transition-all active:scale-95 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-xl'}`}>
-                  <span className="flex items-center gap-4 text-indigo-500 font-black uppercase italic"><History /> Calendário</span>
-                  <ChevronRight />
-                </button>
-
-                <button onClick={() => setProfileFlow('alimentos')} className={`w-full p-8 rounded-[2.5rem] border-2 flex justify-between items-center transition-all active:scale-95 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-xl'}`}>
-                  <span className="flex items-center gap-4 text-amber-500 font-black uppercase italic"><UtensilsCrossed /> Meus Alimentos</span>
-                  <ChevronRight />
-                </button>
-
-                <div className={`p-6 rounded-[2.5rem] border-2 ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white shadow-sm'}`}>
-  <div className="flex justify-between items-start mb-4">
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <Activity size={14} className={dark ? 'text-indigo-400' : 'text-indigo-600'} />
-        <span className="text-[10px] font-black uppercase opacity-40">Bio-Status</span>
-      </div>
-      <h2 className="text-4xl font-black italic tracking-tighter flex items-baseline gap-1">
-        {imcCalculado} <span className="text-xs font-medium not-italic opacity-30 uppercase">IMC</span>
-      </h2>
+                ) : (
+                  <p className="text-center opacity-40">Aguardando seleção...</p>
+                )}
+              </div>
+            )}
+          </main>
+        </>
+      )}
     </div>
-    
-    {/* RETÂNGULO DO ESTADO (BADGE) - CORRIGIDO */}
-    <div className="text-right">
-      <span className={`inline-block text-[10px] font-black uppercase px-3 py-2 rounded-xl shadow-sm ${status.badge} ${status.text}`}>
-        {status.label}
-      </span>
-    </div>
-  </div>
-
-  {/* BARRA DE PROGRESSO */}
-  <div className="relative h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-    <div 
-      className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out ${status.bg}`}
-      style={{ width: status.pct, minWidth: '8%' }}
-    />
-  </div>
-  
-  <div className="flex justify-between mt-2 text-[7px] font-black uppercase opacity-20 tracking-widest px-1">
-    <span>Magreza</span>
-    <span>Ideal</span>
-    <span>Sobrepeso</span>
-    <span>Obesidade</span>
-  </div>
-</div>
-
-                <button onClick={() => setProfileFlow('setup')} className="w-full p-8 rounded-[2.5rem] bg-indigo-600 text-white font-black flex justify-between items-center italic uppercase shadow-xl hover:bg-indigo-700 transition-all">
-                  <span className="flex items-center gap-4"><Settings2 /> Bio-Medidas</span>
-                  <ChevronRight />
-                </button>
+  );
 
                 <button onClick={() => { localStorage.removeItem('nf:session'); window.location.reload(); }} className="w-full p-4 font-black opacity-40 uppercase text-[10px] text-center italic underline hover:opacity-100">
                   Sair da Conta
