@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { History, Trash2, ChevronLeft } from 'lucide-react';
 
 // Importação dos seus novos componentes
-import MacroDashboard from './components/MacroDashboard';
-import FoodInput from './components/FoodInput';
-import ProfileMenu from './components/ProfileMenu';
-import CalendarView from './components/CalendarView';
-import BottomNav from './components/BottomNav';
+import MacroDashboard from './components/MacroDashboard.jsx';
+import FoodInput from './components/FoodInput.jsx';
+import ProfileMenu from './components/ProfileMenu.jsx';
+import CalendarView from './components/CalendarView.jsx';
+import BottomNav from './components/BottomNav.jsx';
 
 const App = () => {
   // --- ESTADOS GLOBAIS ---
