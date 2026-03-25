@@ -1,11 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 
-const FoodInput = ({ alInput, setAlInput, setSugestoes, dbTotal, handleAdd, dark }) => {
-  const inputClass = `w-full p-5 rounded-3xl font-bold border-2 transition-all outline-none ${
-    dark ? 'bg-slate-900 border-slate-800 focus:border-indigo-500' : 'bg-white border-slate-100 focus:border-indigo-500 shadow-sm'
-  }`;
-
+const FoodInput = ({ alInput, setAlInput, sugestoes, setSugestoes, dbTotal, handleAddAlimento, dark, inputClass }) => {
   return (
     <div className="flex gap-3 items-start">
       <div className="relative" style={{ flex: 2 }}>
@@ -17,10 +13,25 @@ const FoodInput = ({ alInput, setAlInput, setSugestoes, dbTotal, handleAdd, dark
             setAlInput({ ...alInput, nome: v });
             if (v.length > 1) {
               setSugestoes(Object.keys(dbTotal).filter(n => n.toLowerCase().includes(v.toLowerCase())));
-            } else setSugestoes([]);
+            } else {
+              setSugestoes([]);
+            }
           }} 
           className={inputClass} 
         />
+        {sugestoes.length > 0 && (
+          <div className={`absolute z-50 w-full mt-2 rounded-2xl border-2 shadow-2xl overflow-hidden ${dark ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
+            {sugestoes.slice(0, 5).map(s => (
+              <button 
+                key={s} 
+                onClick={() => { setAlInput({ ...alInput, nome: s.toUpperCase() }); setSugestoes([]); }} 
+                className="w-full p-4 text-left text-[10px] font-black uppercase hover:bg-indigo-600 hover:text-white"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <input 
         placeholder="G" 
@@ -30,10 +41,7 @@ const FoodInput = ({ alInput, setAlInput, setSugestoes, dbTotal, handleAdd, dark
         className={inputClass} 
         style={{ flex: 1 }} 
       />
-      <button 
-        onClick={handleAdd} 
-        className="p-5 rounded-3xl bg-indigo-600 text-white shadow-lg active:scale-90"
-      >
+      <button onClick={handleAddAlimento} className="p-5 rounded-3xl bg-indigo-600 text-white shadow-lg active:scale-90">
         <Plus />
       </button>
     </div>
