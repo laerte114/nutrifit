@@ -1,9 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const CalendarView = ({ viewDate, setViewDate, dataSelecionada, setDataSelecionada, setStep, setProfileFlow, hojeStr, dark }) => {
-  const diasNoMes = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
-  
+const CalendarView = ({ dark, viewDate, setViewDate, dataSelecionada, setDataSelecionada, setStep, setProfileFlow, hojeStr }) => {
   return (
     <div className="space-y-4">
       <button onClick={() => setProfileFlow('menu')} className="flex items-center gap-2 font-black uppercase text-[10px] opacity-40">
@@ -28,15 +26,16 @@ const CalendarView = ({ viewDate, setViewDate, dataSelecionada, setDataSeleciona
             <span key={idx} className="text-[8px] font-black opacity-20 text-center">{d}</span>
           ))}
           
-          {[...Array(diasNoMes)].map((_, i) => {
+          {[...Array(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate())].map((_, i) => {
             const diaNum = i + 1;
             const dLoop = new Date(viewDate.getFullYear(), viewDate.getMonth(), diaNum);
             const dataLoopStr = dLoop.toISOString().split('T')[0];
+            
             const isHoje = dataLoopStr === hojeStr;
             const isSelecionado = dataLoopStr === dataSelecionada;
             const isFuturo = dLoop > new Date().setHours(23, 59, 59, 999);
 
-             return (
+            return (
               <button 
                 key={i} 
                 disabled={isFuturo} 
@@ -57,6 +56,7 @@ const CalendarView = ({ viewDate, setViewDate, dataSelecionada, setDataSeleciona
             );
           })}
         </div>
+
         <p className="mt-8 text-[8px] font-black uppercase opacity-20 text-center italic">
           Toque em um dia para ver o histórico
         </p>
