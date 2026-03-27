@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Crown, BarChart3, Sun, Moon, Plus } from 'lucide-react';
+import { Crown, BarChart3, Sun, Moon, Plus, LogOut } from 'lucide-react';
 
 // Importando os componentes isolados
 import BottomNav from './components/BottomNav';
@@ -8,6 +8,7 @@ import FoodInput from './components/FoodInput';
 import MacroDashboard from './components/MacroDashboard';
 import MyFoods from './components/MyFoods';
 import ProfileMenu from './components/ProfileMenu';
+import Auth from './components/Auth'; // <-- Seu novo componente de Login!
 
 const API_URL = "https://nutrifit-1jhv.onrender.com"; 
 
@@ -18,12 +19,33 @@ const formatarDataParaBR = (dataStr) => {
 };
 
 const App = () => {
-  const session = localStorage.getItem('nf:session');
-  const userObj = session ? JSON.parse(session) : null;
-  const [currentUser, setCurrentUser] = useState(userObj);
-  const [authMode, setAuthMode] = useState(userObj ? 'app' : 'login'); 
-  const [dark, setDark] = useState(localStorage.getItem('nf:theme') === 'dark');
+  // --- SISTEMA DE AUTENTICAÇÃO REAL ---
+  const tokenSalvo = localStorage.getItem('token');
+  const [isAuthenticated, setIsAuthenticated] = useState(!!tokenSalvo);
+  
+  const [currentUser, setCurrentUser] = useState({
+    email: localStorage.getItem('email') || '',
+    nome: localStorage.getItem('nome') || ''
+  });
 
+  const handleLoginSuccess = () => {
+    setCurrentUser({
+      email: localStorage.getItem('email'),
+      nome: localStorage.getItem('nome')
+    });
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('email');
+    localStorage.removeItem('nome');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+  };
+  // ------------------------------------
+
+  const [dark, setDark] = useState(localStorage.getItem('nf:theme') === 'dark');
   const [step, setStep] = useState('resultado'); 
   const [profileFlow, setProfileFlow] = useState('menu');
   
@@ -37,7 +59,7 @@ const App = () => {
   const [showRelatorio, setShowRelatorio] = useState(false);
   const [dadosSemana, setDadosSemana] = useState(null);
 
-  const savedStats = userObj ? localStorage.getItem(`nf:stats:${userObj.email}`) : null;
+  const savedStats = currentUser ? localStorage.getItem(`nf:stats:${currentUser.email}`) : null;
   const [userStats, setUserStats] = useState(savedStats ? JSON.parse(savedStats) : {
     peso: '70', altura: '170', idade: '25', genero: 'masculino', intensidade: '1.2', objetivo: 'manter'
   });
@@ -45,12 +67,19 @@ const App = () => {
   const isDiaAnterior = dataSelecionada !== hojeStr;
   const [dbFixa, setDbFixa] = useState({});
 
-  // 1. BUSCA DA BASE DE ALIMENTOS
+  // 1. BUSCA DA BASE DE ALIMENTOS (COM TOKEN)
   useEffect(() => {
     const carregarBaseAlimentos = async () => {
-      if (!currentUser?.email) return;
+      if (!isAuthenticated || !currentUser?.email) return;
+      
+      const token = localStorage.getItem('token');
       try {
-        const res = await fetch(`${API_URL}/alimentos-base/${currentUser.email}`);
+        const res = await fetch(`${API_URL}/alimentos-base/${currentUser.email}`, {
+          headers: { 'Authorization': `Bearer ${token}` } // <-- Crachá enviado!
+        });
+
+        if (res.status === 401) return handleLogout(); // Se o token expirou, desloga
+
         if (res.ok) {
           const todosOsAlimentos = await res.json();
           const mapaGeral = {};   
@@ -76,27 +105,38 @@ const App = () => {
 
           setDbFixa(mapaGeral);
           setMeusAlimentos(mapaUsuario);
-          localStorage.setItem(`nf:meus:${currentUser.email}`, JSON.stringify(mapaUsuario));
         }
       } catch (err) {
         console.error("❌ Erro na base de dados:", err);
       }
     };
     carregarBaseAlimentos();
-  }, [currentUser?.email]);
+  }, [currentUser?.email, isAuthenticated]);
 
-  // 2. BUSCA DO DIÁRIO E STATS
+  // 2. BUSCA DO DIÁRIO E STATS (COM TOKEN)
   useEffect(() => {
     const carregarDadosDinamicos = async () => {
-      if (!currentUser?.email) return;
+      if (!isAuthenticated || !currentUser?.email) return;
+      
+      const token = localStorage.getItem('token');
       const dataBR = formatarDataParaBR(dataSelecionada);
+      
       try {
-        const resRef = await fetch(`${API_URL}/refeicoes/${currentUser.email}/${encodeURIComponent(dataBR)}`);
+        const resRef = await fetch(`${API_URL}/refeicoes/${currentUser.email}/${encodeURIComponent(dataBR)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (resRef.status === 401) return handleLogout();
+
         if (resRef.ok) {
           const dados = await resRef.json();
           setHistorico(prev => ({ ...prev, [dataSelecionada]: dados }));
         }
-        const resStats = await fetch(`${API_URL}/stats/${currentUser.email}`);
+
+        const resStats = await fetch(`${API_URL}/stats/${currentUser.email}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
         if (resStats.ok) {
           const statsNuvem = await resStats.json();
           if (statsNuvem && statsNuvem.peso) setUserStats(statsNuvem);
@@ -106,7 +146,7 @@ const App = () => {
       }
     };
     carregarDadosDinamicos();
-  }, [dataSelecionada, currentUser?.email]);
+  }, [dataSelecionada, currentUser?.email, isAuthenticated]);
 
   const dbTotal = useMemo(() => ({ ...dbFixa, ...meusAlimentos }), [dbFixa, meusAlimentos]);
 
@@ -180,18 +220,12 @@ const App = () => {
 
   const btnPrimary = `w-full p-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase italic shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
 
-  if (authMode !== 'app') {
+  // --- SE NÃO ESTIVER LOGADO, MOSTRA A TELA DE LOGIN ---
+  if (!isAuthenticated) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <button 
-          onClick={() => { 
-            localStorage.setItem('nf:session', JSON.stringify({nome: 'USUÁRIO PREMIUM', email: 'user@nutrifit.com'})); 
-            window.location.reload(); 
-          }} 
-          className={btnPrimary}
-        >
-          Acessar NutriFit Premium
-        </button>
+         {/* Passamos a função handleLoginSuccess para o Auth avisar o App que deu certo */}
+         <Auth onLoginSuccess={handleLoginSuccess} /> 
       </div>
     );
   }
@@ -213,6 +247,7 @@ const App = () => {
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-500 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       
+      {/* Relatorio Modal Omitido por brevidade visual, está mantido como o original */}
       {showRelatorio && dadosSemana && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/60">
           <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] border-2 shadow-2xl ${dark ? 'bg-slate-900 border-indigo-500/30 text-white' : 'bg-white border-slate-100'}`}>
@@ -233,7 +268,12 @@ const App = () => {
       )}
 
       <header className="max-w-md mx-auto px-6 pt-12 flex justify-between items-center">
-        <div><p className="text-[10px] font-black opacity-40 uppercase mb-1">{formatarDataParaBR(dataSelecionada)}</p><div className="flex items-center gap-2 font-black text-2xl uppercase italic tracking-tighter">{currentUser?.nome} <Crown size={18} className="text-amber-500 fill-amber-500" /></div></div>
+        <div>
+          <p className="text-[10px] font-black opacity-40 uppercase mb-1">{formatarDataParaBR(dataSelecionada)}</p>
+          <div className="flex items-center gap-2 font-black text-2xl uppercase italic tracking-tighter">
+            {currentUser?.nome} <Crown size={18} className="text-amber-500 fill-amber-500" />
+          </div>
+        </div>
         <div className="flex gap-3">
           <button onClick={gerarRelatorioSemanal} className="p-4 rounded-2xl bg-amber-500/10 text-amber-600 active:scale-90"><BarChart3 size={20}/></button>
           <button onClick={() => {
@@ -241,6 +281,8 @@ const App = () => {
             setDark(newDark);
             localStorage.setItem('nf:theme', newDark ? 'dark' : 'light');
           }} className="p-4 rounded-2xl bg-indigo-600/10 text-indigo-600 active:scale-90">{dark ? <Sun size={20}/> : <Moon size={20}/>}</button>
+          {/* BOTÃO DE LOGOUT ADICIONADO AQUI */}
+          <button onClick={handleLogout} className="p-4 rounded-2xl bg-red-500/10 text-red-600 active:scale-90"><LogOut size={20}/></button>
         </div>
       </header>
 

@@ -126,13 +126,12 @@ if (!mongoURI) {
   if (!token) return res.status(401).json({ error: "Acesso negado. Token não fornecido." });
 
   try {
-    // Tira a palavra "Bearer " se ela vier junto com o token do frontend
     const tokenFormatado = token.replace('Bearer ', '');
     const validado = jwt.verify(tokenFormatado, SECRET_KEY);
-    req.user = validado; // Salva os dados do token na requisição
-    next(); // Pode prosseguir para a rota
+    req.user = validado; 
+    next(); 
   } catch (err) {
-    res.status(401).json({ error: "Token inválido." });
+    res.status(401).json({ error: "Token inválido ou expirado." });
   }
 };
 
@@ -158,12 +157,12 @@ app.post('/login', async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Incorreto" });
     }
-    const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: '1d' });
+    const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: '7d' }); // Coloquei 7 dias para o usuário não deslogar toda hora no app
     res.json({ token, nome: user.nome, email: user.email });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/alimentos-base/:email', async (req, res) => {
+app.get('/alimentos-base/:email', verificarToken, async (req, res) => {
   try {
     const { email } = req.params;
     const alimentos = await FoodBase.find({ 
@@ -173,14 +172,14 @@ app.get('/alimentos-base/:email', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/meus-alimentos/:email', async (req, res) => {
+app.get('/meus-alimentos/:email', verificarToken, async (req, res) => {
   try {
     const alimentos = await FoodBase.find({ userEmail: req.params.email });
     res.json(alimentos);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/meus-alimentos', async (req, res) => {
+app.post('/meus-alimentos', verificarToken, async (req, res) => {
   try {
     const { email, nome, c, p, cho, g } = req.body;
     const novoAlimento = new FoodBase({
@@ -193,7 +192,7 @@ app.post('/meus-alimentos', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/meus-alimentos/:id', async (req, res) => {
+app.delete('/meus-alimentos/:id', verificarToken, async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -209,7 +208,7 @@ app.delete('/meus-alimentos/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.get('/refeicoes/:email/:data', async (req, res) => {
+app.get('/refeicoes/:email/:data', verificarToken, async (req, res) => {
   try {
     const { email, data } = req.params;
     const meals = await Meal.find({ email, data }).sort({ _id: -1 });
@@ -217,7 +216,7 @@ app.get('/refeicoes/:email/:data', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/refeicoes', async (req, res) => {
+app.post('/refeicoes', verificarToken, async (req, res) => {
   try {
     const { email, alimento, data } = req.body;
     const newMeal = new Meal({ 
@@ -230,7 +229,7 @@ app.post('/refeicoes', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/refeicoes/:id', async (req, res) => {
+app.delete('/refeicoes/:id', verificarToken, async (req, res) => {
   try {
     const resultado = await Meal.findByIdAndDelete(req.params.id);
     if (!resultado) return res.status(404).json({ error: "Não encontrado" });
@@ -238,14 +237,14 @@ app.delete('/refeicoes/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.get('/stats/:email', async (req, res) => {
+app.get('/stats/:email', verificarToken, async (req, res) => {
   try {
     const stats = await UserStats.findOne({ email: req.params.email });
     res.json(stats || {});
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/stats', async (req, res) => {
+app.post('/stats', verificarToken, async (req, res) => {
   try {
     const { email, ...dados } = req.body;
     const stats = await UserStats.findOneAndUpdate(
@@ -257,7 +256,7 @@ app.post('/stats', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/streak/:email', async (req, res) => {
+app.get('/streak/:email', verificarToken, async (req, res) => {
   try {
     const email = req.params.email;
     const stats = await UserStats.findOne({ email });
@@ -266,7 +265,7 @@ app.get('/streak/:email', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.put('/meus-alimentos/:id', async (req, res) => {
+app.put('/meus-alimentos/:id', verificarToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { c, p, cho, g } = req.body;
