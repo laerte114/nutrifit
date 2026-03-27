@@ -8,7 +8,7 @@ import FoodInput from './components/FoodInput';
 import MacroDashboard from './components/MacroDashboard';
 import MyFoods from './components/MyFoods';
 import ProfileMenu from './components/ProfileMenu';
-import Auth from './components/Auth'; // <-- Seu novo componente de Login!
+import Auth from './components/Auth';
 
 const API_URL = "https://nutrifit-1jhv.onrender.com"; 
 
