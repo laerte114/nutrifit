@@ -49,7 +49,7 @@ const App = () => {
   const [step, setStep] = useState('resultado'); 
   const [profileFlow, setProfileFlow] = useState('menu');
   
-  const hojeStr = new Date().toISOString().split('T')[0];
+  const hojeStr = new Date().toLocaleDateString('en-CA');
   const [dataSelecionada, setDataSelecionada] = useState(hojeStr);
   const [viewDate, setViewDate] = useState(new Date());
 
