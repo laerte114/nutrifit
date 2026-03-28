@@ -222,13 +222,12 @@ const App = () => {
 
   // --- SE NÃO ESTIVER LOGADO, MOSTRA A TELA DE LOGIN ---
   if (!isAuthenticated) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
-         {/* Passamos a função handleLoginSuccess para o Auth avisar o App que deu certo */}
-         <Auth onLoginSuccess={handleLoginSuccess} /> 
-      </div>
-    );
-  }
+  return (
+    <div className={`min-h-screen flex items-center justify-center p-6 ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+       <Auth onLoginSuccess={handleLoginSuccess} dark={dark} />  {/* <--- ADICIONE O dark={dark} AQUI */}
+    </div>
+  );
+}
 
   const pesoNum = parseFloat(userStats?.peso || 0);
   const alturaNum = parseFloat(userStats?.altura || 0);
