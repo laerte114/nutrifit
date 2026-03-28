@@ -62,9 +62,13 @@ const ProfileMenu = ({ dark, profileFlow, setProfileFlow, imcCalculado, status, 
           <button 
             onClick={async () => { 
               try {
+                const token = localStorage.getItem('token'); // TOKEN
                 const res = await fetch(`${API_URL}/stats`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // HEADER
+                  },
                   body: JSON.stringify({
                     email: currentUser.email,
                     ...userStats
@@ -144,7 +148,7 @@ const ProfileMenu = ({ dark, profileFlow, setProfileFlow, imcCalculado, status, 
         <ChevronRight />
       </button>
 
-      <button onClick={() => { localStorage.removeItem('nf:session'); window.location.reload(); }} className="w-full p-4 font-black opacity-40 uppercase text-[10px] text-center italic underline hover:opacity-100">
+      <button onClick={() => { localStorage.removeItem('nf:session'); localStorage.removeItem('token'); window.location.reload(); }} className="w-full p-4 font-black opacity-40 uppercase text-[10px] text-center italic underline hover:opacity-100">
         Sair da Conta
       </button>
     </div> 

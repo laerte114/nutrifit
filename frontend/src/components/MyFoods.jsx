@@ -35,6 +35,7 @@ const MyFoods = ({ dark, setProfileFlow, meusAlimentos, setMeusAlimentos, curren
                     onClick={async () => {
                       const alimentoOriginal = meusAlimentos[nome];
                       const idNoBanco = alimentoOriginal?.id || alimentoOriginal?._id; 
+                      const token = localStorage.getItem('token'); // TOKEN
 
                       const payload = { 
                         c: Number(novoAlimento.c), 
@@ -52,7 +53,10 @@ const MyFoods = ({ dark, setProfileFlow, meusAlimentos, setMeusAlimentos, curren
                         try {
                           await fetch(`${API_URL}/meus-alimentos/${idNoBanco}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}` // HEADER
+                            },
                             body: JSON.stringify(payload)
                           });
                           console.log("✅ Dados salvos na nuvem!");
@@ -79,6 +83,7 @@ const MyFoods = ({ dark, setProfileFlow, meusAlimentos, setMeusAlimentos, curren
                     onClick={async () => { 
                       const alimentoOriginal = meusAlimentos[nome];
                       const idNoBanco = alimentoOriginal?.id || alimentoOriginal?._id;
+                      const token = localStorage.getItem('token'); // TOKEN
 
                       const n = { ...meusAlimentos }; 
                       delete n[nome]; 
@@ -88,7 +93,8 @@ const MyFoods = ({ dark, setProfileFlow, meusAlimentos, setMeusAlimentos, curren
                       if (idNoBanco) {
                         try {
                           await fetch(`${API_URL}/meus-alimentos/${idNoBanco}`, {
-                            method: 'DELETE'
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` } // HEADER
                           });
                           console.log("✅ Removido da nuvem!");
                         } catch (err) { console.error("Erro ao deletar:", err); }
@@ -118,6 +124,7 @@ const MyFoods = ({ dark, setProfileFlow, meusAlimentos, setMeusAlimentos, curren
           <button 
             onClick={async () => { 
               if (novoAlimento.nome && novoAlimento.c) { 
+                const token = localStorage.getItem('token'); // TOKEN
                 const payload = {
                   nome: novoAlimento.nome.toUpperCase(),
                   c: Number(novoAlimento.c),
@@ -136,7 +143,10 @@ const MyFoods = ({ dark, setProfileFlow, meusAlimentos, setMeusAlimentos, curren
                 try {
                   const response = await fetch(`${API_URL}/meus-alimentos`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}` // HEADER
+                    },
                     body: JSON.stringify(payload)
                   });
 
